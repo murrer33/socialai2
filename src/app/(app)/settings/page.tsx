@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardFooter, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Bot, FileUp, Link as LinkIcon, UploadCloud, Loader2, Trash2 } from "lucide-react"
@@ -18,10 +17,15 @@ import { useToast } from "@/hooks/use-toast"
 import { generateBrandBrief } from "@/ai/flows/generate-brand-brief"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Switch } from "@/components/ui/switch"
+import { Slider } from "@/components/ui/slider"
 
 const brandProfileSchema = z.object({
   companyName: z.string().min(1, "Company name is required."),
-  tone: z.string().min(1, "Tone of voice is required."),
+  tone: z.object({
+    friendly: z.number().min(0).max(100),
+    playful: z.number().min(0).max(100),
+    simple: z.number().min(0).max(100),
+  }),
   pitch: z.string().min(1, "Elevator pitch is required."),
   logo: z.any().optional(),
   primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color."),
@@ -104,7 +108,11 @@ export default function SettingsPage() {
     resolver: zodResolver(brandProfileSchema),
     defaultValues: {
       companyName: "",
-      tone: "friendly",
+      tone: {
+          friendly: 50,
+          playful: 50,
+          simple: 50,
+      },
       pitch: "",
       primaryColor: "#3F51B5",
     },
@@ -205,7 +213,7 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
+                     <FormField
                       control={form.control}
                       name="companyName"
                       render={({ field }) => (
@@ -218,28 +226,45 @@ export default function SettingsPage() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="tone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tone of Voice</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a tone" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="friendly">Friendly</SelectItem>
-                              <SelectItem value="professional">Professional</SelectItem>
-                              <SelectItem value="playful">Playful</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="space-y-4">
+                         <Label>Tone of Voice</Label>
+                         <FormField
+                            control={form.control}
+                            name="tone.friendly"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                    <div className="flex justify-between text-xs text-muted-foreground"><span>Formal</span><span>Friendly</span></div>
+                                    <FormControl>
+                                        <Slider defaultValue={[field.value]} onValueChange={(v) => field.onChange(v[0])} max={100} step={1} />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                         />
+                         <FormField
+                            control={form.control}
+                            name="tone.playful"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                    <div className="flex justify-between text-xs text-muted-foreground"><span>Serious</span><span>Playful</span></div>
+                                    <FormControl>
+                                        <Slider defaultValue={[field.value]} onValueChange={(v) => field.onChange(v[0])} max={100} step={1} />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                         />
+                          <FormField
+                            control={form.control}
+                            name="tone.simple"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                    <div className="flex justify-between text-xs text-muted-foreground"><span>Detailed</span><span>Simple</span></div>
+                                    <FormControl>
+                                        <Slider defaultValue={[field.value]} onValueChange={(v) => field.onChange(v[0])} max={100} step={1} />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                         />
+                    </div>
                   </div>
                   <FormField
                     control={form.control}

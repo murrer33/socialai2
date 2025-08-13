@@ -13,11 +13,13 @@ import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const GenerateBrandBriefInputSchema = z.object({
-  companyProfile: z
-    .string()
-    .describe('A description of the company profile.'),
+  companyProfile: z.string().describe('A description of the company profile.'),
   audience: z.string().describe('The target audience of the company.'),
-  tone: z.string().describe('The desired tone of the brand.'),
+  tone: z.object({
+    friendly: z.number().min(0).max(100),
+    playful: z.number().min(0).max(100),
+    simple: z.number().min(0).max(100),
+  }).describe('The desired tone of the brand, represented by three values.'),
 });
 
 export type GenerateBrandBriefInput = z.infer<typeof GenerateBrandBriefInputSchema>;
@@ -52,10 +54,15 @@ const prompt = ai.definePrompt({
 
   Company Profile: {{{companyProfile}}}
   Audience: {{{audience}}}
-  Tone: {{{tone}}}
+  Tone Sliders (0-100 scale):
+  - Friendly: {{{tone.friendly}}}
+  - Playful: {{{tone.playful}}}
+  - Simple: {{{tone.simple}}}
+
+  Synthesize these inputs to define the brand's voice. For example, high 'Friendly' and 'Simple' but low 'Playful' suggests a clear, approachable, but not jokey tone.
 
   Brand Brief:
-  Tone Tokens:`, // Ensure the LLM outputs the brand brief and tone tokens.
+  Tone Tokens:`,
 });
 
 const generateBrandBriefFlow = ai.defineFlow(
