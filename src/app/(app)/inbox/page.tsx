@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Bot, CornerDownLeft, Wand2, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { autoReplyToMessage, AutoReplyToMessageInput } from "@/ai/flows/auto-reply-to-messages";
+import { polishCaption, PolishCaptionInput } from "@/ai/flows/polish-caption";
 import { useToast } from "@/hooks/use-toast";
 
 type Message = {
@@ -19,10 +20,11 @@ type Message = {
   message: string;
   aiReply?: string;
   confidence?: number;
-  isLoading: boolean;
+  isGenerating: boolean;
+  isRefining: boolean;
 };
 
-const initialMessages: Omit<Message, 'isLoading' | 'aiReply' | 'confidence'>[] = [
+const initialMessages: Omit<Message, 'isGenerating' | 'isRefining' | 'aiReply' | 'confidence'>[] = [
   {
     id: 1,
     user: "Ayşe Yılmaz",
@@ -48,9 +50,12 @@ const initialMessages: Omit<Message, 'isLoading' | 'aiReply' | 'confidence'>[] =
 
 export default function InboxPage() {
     const [messages, setMessages] = useState<Message[]>(
-        initialMessages.map(m => ({ ...m, isLoading: true }))
+        initialMessages.map(m => ({ ...m, isGenerating: true, isRefining: false }))
     );
     const { toast } = useToast();
+
+    // In a real app, this would come from the user's settings (GET /brand)
+    const brandTone = { friendly: 80, playful: 40, simple: 70 };
 
     useEffect(() => {
         const generateReplies = async () => {
@@ -59,12 +64,10 @@ export default function InboxPage() {
             const policy = "Be polite and concise. If you don't know the answer, say you will get a human to help.";
 
             for (const message of initialMessages) {
-                // Find the message in state to check if we should process it
                 const messageInState = messages.find(m => m.id === message.id);
-                if (messageInState?.isLoading) { 
+                if (messageInState?.isGenerating) { 
                     try {
                         const input: AutoReplyToMessageInput = {
-                            // Simple intent detection based on keywords for this demo
                             detectedIntent: message.message.includes("fiyat") || message.message.toLowerCase().includes("price") ? "price" : 
                                             message.message.includes("saat") || message.message.toLowerCase().includes("hours") ? "hours" : "faq",
                             knowledgeBaseFacts,
@@ -76,7 +79,7 @@ export default function InboxPage() {
                         
                         setMessages(prev => prev.map(m => 
                             m.id === message.id 
-                            ? { ...m, aiReply: result.reply, confidence: result.confidenceLevel, isLoading: false } 
+                            ? { ...m, aiReply: result.reply, confidence: result.confidenceLevel, isGenerating: false } 
                             : m
                         ));
 
@@ -89,7 +92,7 @@ export default function InboxPage() {
                         });
                          setMessages(prev => prev.map(m => 
                             m.id === message.id 
-                            ? { ...m, isLoading: false, aiReply: "Could not generate reply." } 
+                            ? { ...m, isGenerating: false, aiReply: "Could not generate reply." } 
                             : m
                         ));
                     }
@@ -98,7 +101,44 @@ export default function InboxPage() {
         };
         generateReplies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Run only once on mount
+    }, []); 
+
+    const handleRefine = async (messageId: number) => {
+        const message = messages.find(m => m.id === messageId);
+        if (!message || !message.aiReply) return;
+
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isRefining: true } : m));
+
+        try {
+            const input: PolishCaptionInput = {
+                caption: message.aiReply,
+                tone: brandTone,
+            };
+            const result = await polishCaption(input);
+
+            setMessages(prev => prev.map(m => 
+                m.id === messageId 
+                ? { ...m, aiReply: result.polishedCaption, isRefining: false } 
+                : m
+            ));
+            toast({
+                title: "Reply Refined",
+                description: "The AI has polished the suggested reply.",
+            });
+        } catch (error) {
+            console.error('Error refining reply for message', messageId, error);
+            toast({
+                variant: 'destructive',
+                title: 'Refinement Failed',
+                description: 'Could not refine the reply. Please try again.',
+            });
+             setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isRefining: false } : m));
+        }
+    };
+
+    const handleTextChange = (messageId: number, newText: string) => {
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, aiReply: newText } : m));
+    };
 
 
   return (
@@ -141,16 +181,24 @@ export default function InboxPage() {
                         </div>
                       </CardHeader>
                       <CardContent className="p-4 pt-0">
-                        {item.isLoading ? (
+                        {item.isGenerating ? (
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 <span>Generating reply...</span>
                             </div>
                         ) : (
                             <>
-                            <Textarea defaultValue={item.aiReply} rows={3} />
+                            <Textarea 
+                                value={item.aiReply}
+                                onChange={(e) => handleTextChange(item.id, e.target.value)}
+                                rows={3} 
+                                disabled={item.isRefining}
+                             />
                             <div className="flex justify-end gap-2 mt-2">
-                                <Button variant="ghost" size="sm"><Wand2 className="h-4 w-4 mr-2" />Refine</Button>
+                                <Button variant="ghost" size="sm" onClick={() => handleRefine(item.id)} disabled={item.isRefining}>
+                                    {item.isRefining ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wand2 className="h-4 w-4 mr-2" />}
+                                    Refine
+                                </Button>
                                 <Button size="sm"><CornerDownLeft className="h-4 w-4 mr-2"/>Send Reply</Button>
                             </div>
                             </>
