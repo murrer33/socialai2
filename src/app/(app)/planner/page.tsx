@@ -8,25 +8,29 @@ import { Bot, Languages, Loader2 } from 'lucide-react';
 import { ContentCard } from './content-card';
 import type { GenerateWeeklyContentPlanOutput } from '@/ai/flows/generate-weekly-content-plan';
 import { generateWeeklyContentPlan } from '@/ai/flows/generate-weekly-content-plan';
+import { generateImageFromVisualBrief } from '@/ai/flows/generate-image-from-visual-brief';
 import { useToast } from '@/hooks/use-toast';
 import { EditPostDialog } from './edit-post-dialog';
 import { Clock } from 'lucide-react';
 
-export type Post = GenerateWeeklyContentPlanOutput['posts'][number] & { status: 'draft' | 'approved' | 'published' };
+export type Post = GenerateWeeklyContentPlanOutput['posts'][number] & { 
+  status: 'draft' | 'approved' | 'published';
+  imageDataUri?: string; 
+};
 type Plan = Omit<GenerateWeeklyContentPlanOutput, 'posts'> & { posts: Post[] };
 
 export default function PlannerPage() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingImages, setIsGeneratingImages] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const handleGeneratePlan = async () => {
     setIsLoading(true);
+    setPlan(null); // Clear previous plan
     try {
-      // In a real app, you would get these values from the settings page.
-      // For now, we'll use some default values.
       const result = await generateWeeklyContentPlan({
         brandBrief: 'A cozy and friendly cafe in Istanbul, known for its artisanal coffee and homemade pastries. We want to be seen as a neighborhood gem.',
         catalogItems: ['Latte', 'Croissant', 'Cheesecake', 'Turkish Coffee'],
@@ -34,8 +38,46 @@ export default function PlannerPage() {
         preferredCadence: '7 posts per week',
         platforms: ['instagram', 'facebook', 'linkedin'],
       });
+      
       const postsWithStatus: Post[] = result.posts.map(p => ({ ...p, status: 'draft' }));
       setPlan({ ...result, posts: postsWithStatus });
+      setIsLoading(false); // Stop main loading indicator
+      setIsGeneratingImages(true); // Start image loading indicator
+
+      // Now, generate images for each post
+      const imagePromises = postsWithStatus.map(async (post) => {
+        try {
+           // In a real app, this would come from settings. For now, using a placeholder.
+          const logoDataUri = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJvdC1tZXNzYWdlLXNxdWFyZSI+PHBhdGggZD0iTTIyIDEyVjZoLTZNNiAxMmgybDJhNS40NCA1LjQ0IDAgMCAxIDYgMEwyMiAxMiIvPjxwYXRoIGQ9Ik0xMiA3djYiLz48cGF0aCBkPSJNOS4wNiA1LjVsNS44OCA1Ljg4Ii8+PHBhdGggZD0iTTIgMTJWMmgyMHYxMGEzIDMgMCAwIDEgLTMgM0gyMSIgcC8+PHBhdGggZD0iTTcgOHY1Ii8+PHBhdGggZD0iTTMgNmgyIi8+PC9zdmc+';
+
+          const imageResult = await generateImageFromVisualBrief({
+            visualBrief: post.visual_brief,
+            brandColor: '#3F51B5', // This would come from settings
+            logoDataUri: logoDataUri,
+          });
+          return { day: post.day, imageDataUri: imageResult.imageDataUri };
+        } catch (imgError) {
+          console.error(`Error generating image for ${post.day}:`, imgError);
+          toast({
+            variant: 'destructive',
+            title: 'Image Generation Failed',
+            description: `Could not create an image for ${post.day}'s post.`,
+          });
+          return { day: post.day, imageDataUri: 'https://placehold.co/400x400.png' }; // Fallback
+        }
+      });
+      
+      const settledImageResults = await Promise.all(imagePromises);
+
+      setPlan(currentPlan => {
+        if (!currentPlan) return null;
+        const updatedPosts = currentPlan.posts.map(post => {
+          const imageResult = settledImageResults.find(res => res.day === post.day);
+          return imageResult ? { ...post, imageDataUri: imageResult.imageDataUri } : post;
+        });
+        return { ...currentPlan, posts: updatedPosts };
+      });
+
     } catch (error) {
       console.error('Error generating plan:', error);
       toast({
@@ -43,8 +85,9 @@ export default function PlannerPage() {
         title: 'Error Generating Plan',
         description: 'There was an issue creating your content plan. Please try again.',
       });
-    } finally {
       setIsLoading(false);
+    } finally {
+      setIsGeneratingImages(false);
     }
   };
 
@@ -73,6 +116,8 @@ export default function PlannerPage() {
     }
   };
 
+  const showLoadingState = isLoading || isGeneratingImages;
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
@@ -84,9 +129,9 @@ export default function PlannerPage() {
         </div>
         <div className="flex gap-2 items-center">
           <Button variant="outline"><Languages className="mr-2 h-4 w-4" /> EN/TR</Button>
-          <Button onClick={handleGeneratePlan} disabled={isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
-            {isLoading ? 'Generating...' : plan ? 'Regenerate Plan' : 'Generate Plan'}
+          <Button onClick={handleGeneratePlan} disabled={showLoadingState}>
+            {showLoadingState ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+            {isLoading ? 'Generating Plan...' : isGeneratingImages ? 'Creating Images...' : plan ? 'Regenerate Plan' : 'Generate Plan'}
           </Button>
         </div>
       </div>
@@ -94,7 +139,7 @@ export default function PlannerPage() {
       {plan ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {plan.posts.map((post, index) => (
-            <ContentCard key={index} post={post} onEdit={handleEditClick} onApprove={handleApprovePost} />
+            <ContentCard key={index} post={post} onEdit={handleEditClick} onApprove={handleApprovePost} isGeneratingImage={!post.imageDataUri} />
           ))}
         </div>
       ) : (

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Edit, MoreHorizontal, RefreshCw, Undo2, Clock } from "lucide-react";
+import { CheckCircle, Edit, MoreHorizontal, RefreshCw, Undo2, Clock, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,9 +18,10 @@ type ContentCardProps = {
   post: Post;
   onEdit: (post: Post) => void;
   onApprove: (post: Post) => void;
+  isGeneratingImage: boolean;
 };
 
-export function ContentCard({ post, onEdit, onApprove }: ContentCardProps) {
+export function ContentCard({ post, onEdit, onApprove, isGeneratingImage }: ContentCardProps) {
   const platformIcons = {
     instagram: '📸',
     facebook: '👍',
@@ -68,13 +69,20 @@ export function ContentCard({ post, onEdit, onApprove }: ContentCardProps) {
       <CardContent className="p-4 pt-0 flex-grow">
         <div className="space-y-4">
           <div className="relative aspect-square w-full rounded-lg overflow-hidden border">
-            <Image
-              src="https://placehold.co/400x400.png"
-              alt={post.visual_brief}
-              data-ai-hint="social media post"
-              fill
-              className="object-cover"
-            />
+            {isGeneratingImage || !post.imageDataUri ? (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-muted">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground mt-2">Generating image...</p>
+              </div>
+            ) : (
+               <Image
+                src={post.imageDataUri}
+                alt={post.visual_brief}
+                data-ai-hint="social media post"
+                fill
+                className="object-cover"
+              />
+            )}
           </div>
           <div className="space-y-2">
             <p className="text-sm line-clamp-3">{post.caption_en}</p>
