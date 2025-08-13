@@ -14,7 +14,13 @@ import {z} from 'genkit';
 
 const GenerateWeeklyContentPlanInputSchema = z.object({
   brandBrief: z.string().describe('A concise brand brief (120-200 words) including tone tokens.'),
-  catalogItems: z.array(z.string()).describe('An array of product/service names from the catalog (top 10).'),
+  selling_points: z.array(z.string()).describe('An array of product/service names from the catalog (top 10).'),
+  audience: z.string().describe('The target audience of the company.'),
+  tone: z.object({
+    friendly: z.number().min(0).max(100),
+    playful: z.number().min(0).max(100),
+    simple: z.number().min(0).max(100),
+  }),
   holidaysEvents: z.string().describe('A string containing upcoming holidays and events within the next 14 days.'),
   preferredCadence: z.string().describe('The preferred posting cadence (e.g., 7 posts per week).'),
   platforms: z.array(z.enum(['instagram', 'facebook', 'linkedin'])).describe('The social media platforms to generate content for.'),
@@ -48,33 +54,18 @@ const weeklyPlanPrompt = ai.definePrompt({
   input: {schema: GenerateWeeklyContentPlanInputSchema},
   output: {schema: GenerateWeeklyContentPlanOutputSchema},
   model: googleAI.model('gemini-2.0-flash'),
-  prompt: `You are a senior social media strategist for SMEs in Turkey.
+  prompt: `You are a senior social media copywriter for Turkish SMEs. Write on-brand, clear Turkish captions. Avoid over-promising and sensitive claims.
+Tone sliders (0-100): Friendly={{{tone.friendly}}}, Playful={{{tone.playful}}}, Simple={{{tone.simple}}}.
+Audience: {{{audience}}}
+Selling points: {{#each selling_points}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
 
-  Generate a weekly social media content plan based on the following information:
-
-  Brand Brief: {{{brandBrief}}}
-  Catalog Items: {{#each catalogItems}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
-  Holidays/Events: {{{holidaysEvents}}}
-  Preferred Cadence: {{{preferredCadence}}}
-  Platforms: {{#each platforms}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
-
-  Output the content plan in the following JSON schema:
-  {
-    "week": "YYYY-WW",
-    "posts": [
-      {
-        "day": "Mon|Tue|...",
-        "platforms": ["instagram","facebook","linkedin"],
-        "idea": "string",
-        "caption_tr": "string",
-        "caption_en": "string",
-        "hashtags": ["#..."],
-        "visual_brief": "string",
-        "recommended_time_local": "HH:mm",
-        "cta": "string"
-      }
-    ]
-  }`,
+TASK:
+1) Propose a 7-post weekly plan: balance education/promo/engagement (e.g., 3/2/2).
+2) For each post: Title (5 words), Caption (120-180 words TR), CTA (1 line), 10-15 hashtags (relevant, Turkish + a few English).
+3) Suggest visual concept: (photo/flat-lay/product-in-use/behind-the-scenes).
+4) Recommend best posting time (local tr-TR, explain rationale briefly).
+Format JSON exactly with fields: week, posts[ {day, platforms, idea, caption_tr, caption_en, hashtags[], visual_brief, recommended_time_local, cta} ].
+`,
 });
 
 const generateWeeklyContentPlanFlow = ai.defineFlow(

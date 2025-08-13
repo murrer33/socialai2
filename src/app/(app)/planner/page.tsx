@@ -36,7 +36,9 @@ export default function PlannerPage() {
     // In a real app, this data would be fetched from GET /brand
     const brandProfile = {
         brandBrief: 'A cozy and friendly cafe in Istanbul, known for its artisanal coffee and homemade pastries. We want to be seen as a neighborhood gem.',
-        catalogItems: ['Latte', 'Croissant', 'Cheesecake', 'Turkish Coffee'],
+        selling_points: ['Latte', 'Croissant', 'Cheesecake', 'Turkish Coffee'],
+        audience: 'Young professionals and students in Istanbul who appreciate high-quality coffee and a relaxing atmosphere.',
+        tone: { friendly: 80, playful: 40, simple: 70 },
         brandColor: '#3F51B5',
         logoDataUri: PLACEHOLDER_LOGO_DATA_URI
     };
@@ -46,7 +48,9 @@ export default function PlannerPage() {
       console.log('Simulating POST /api/v1/plans/generate');
       const generatedPlan = await generateWeeklyContentPlan({
         brandBrief: brandProfile.brandBrief,
-        catalogItems: brandProfile.catalogItems,
+        selling_points: brandProfile.selling_points,
+        audience: brandProfile.audience,
+        tone: brandProfile.tone,
         holidaysEvents: 'No upcoming holidays.',
         preferredCadence: '7 posts per week',
         platforms: ['instagram', 'facebook', 'linkedin'],
