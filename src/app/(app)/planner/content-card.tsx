@@ -1,3 +1,4 @@
+
 'use client';
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -15,9 +16,10 @@ import type { GenerateWeeklyContentPlanOutput } from '@/ai/flows/generate-weekly
 
 type ContentCardProps = {
   post: GenerateWeeklyContentPlanOutput['posts'][number];
+  onEdit: (post: GenerateWeeklyContentPlanOutput['posts'][number]) => void;
 };
 
-export function ContentCard({ post }: ContentCardProps) {
+export function ContentCard({ post, onEdit }: ContentCardProps) {
   const platformIcons = {
     instagram: '📸',
     facebook: '👍',
@@ -32,7 +34,7 @@ export function ContentCard({ post }: ContentCardProps) {
             <span className="font-bold text-lg">{post.day}</span>
             <div className="flex items-center gap-1">
               {post.platforms.map(p => (
-                <span key={p} title={p} className="text-xs">{platformIcons[p]}</span>
+                <span key={p} title={p} className="text-xs">{platformIcons[p as keyof typeof platformIcons]}</span>
               ))}
             </div>
           </div>
@@ -43,7 +45,7 @@ export function ContentCard({ post }: ContentCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onEdit(post)}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>

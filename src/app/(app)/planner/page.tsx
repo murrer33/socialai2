@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -8,10 +9,13 @@ import { ContentCard } from './content-card';
 import type { GenerateWeeklyContentPlanOutput } from '@/ai/flows/generate-weekly-content-plan';
 import { generateWeeklyContentPlan } from '@/ai/flows/generate-weekly-content-plan';
 import { useToast } from '@/hooks/use-toast';
+import { EditPostDialog } from './edit-post-dialog';
 
 export default function PlannerPage() {
   const [plan, setPlan] = useState<GenerateWeeklyContentPlanOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [editingPost, setEditingPost] = useState<GenerateWeeklyContentPlanOutput['posts'][number] | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const handleGeneratePlan = async () => {
@@ -23,8 +27,8 @@ export default function PlannerPage() {
         brandBrief: 'A cozy and friendly cafe in Istanbul, known for its artisanal coffee and homemade pastries. We want to be seen as a neighborhood gem.',
         catalogItems: ['Latte', 'Croissant', 'Cheesecake', 'Turkish Coffee'],
         holidaysEvents: 'No upcoming holidays.',
-        preferredCadence: '5 posts per week',
-        platforms: ['instagram', 'facebook'],
+        preferredCadence: '7 posts per week',
+        platforms: ['instagram', 'facebook', 'linkedin'],
       });
       setPlan(result);
     } catch (error) {
@@ -37,6 +41,20 @@ export default function PlannerPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEditClick = (post: GenerateWeeklyContentPlanOutput['posts'][number]) => {
+    setEditingPost(post);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSavePost = (updatedPost: GenerateWeeklyContentPlanOutput['posts'][number]) => {
+    if (plan) {
+      const updatedPosts = plan.posts.map(p => (p.day === updatedPost.day ? updatedPost : p));
+      setPlan({ ...plan, posts: updatedPosts });
+    }
+    setIsEditDialogOpen(false);
+    setEditingPost(null);
   };
 
   return (
@@ -60,7 +78,7 @@ export default function PlannerPage() {
       {plan ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {plan.posts.map((post, index) => (
-            <ContentCard key={index} post={post} />
+            <ContentCard key={index} post={post} onEdit={handleEditClick} />
           ))}
         </div>
       ) : (
@@ -86,6 +104,12 @@ export default function PlannerPage() {
           </CardContent>
         </Card>
       )}
+       <EditPostDialog
+        post={editingPost}
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onSave={handleSavePost}
+      />
     </div>
   );
 }
