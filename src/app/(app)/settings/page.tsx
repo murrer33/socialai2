@@ -29,6 +29,14 @@ const brandProfileSchema = z.object({
 
 type BrandProfileFormValues = z.infer<typeof brandProfileSchema>;
 
+type Connection = {
+  id: 'instagram' | 'facebook' | 'linkedin';
+  name: string;
+  logoHint: string;
+  connected: boolean;
+  accountName?: string;
+};
+
 export default function SettingsPage() {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -36,7 +44,30 @@ export default function SettingsPage() {
   const [toneTokens, setToneTokens] = useState("");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  
+  const [connections, setConnections] = useState<Connection[]>([
+    { id: 'instagram', name: 'Instagram Business', logoHint: 'instagram logo', connected: false },
+    { id: 'facebook', name: 'Facebook Page', logoHint: 'facebook logo', connected: true, accountName: 'My Biz Page' },
+    { id: 'linkedin', name: 'LinkedIn Company Page', logoHint: 'linkedin logo', connected: false },
+  ]);
 
+  const handleConnectionToggle = (id: Connection['id']) => {
+    setConnections(prev =>
+      prev.map(conn =>
+        conn.id === id
+          ? {
+              ...conn,
+              connected: !conn.connected,
+              accountName: !conn.connected ? `Connected ${conn.name}` : undefined,
+            }
+          : conn
+      )
+    );
+    toast({
+        title: "Connection Updated",
+        description: `Your ${id} account has been ${connections.find(c => c.id === id)?.connected ? 'disconnected' : 'connected'}.`,
+    })
+  };
 
   const form = useForm<BrandProfileFormValues>({
     resolver: zodResolver(brandProfileSchema),
@@ -290,30 +321,27 @@ export default function SettingsPage() {
               <CardDescription>Connect your accounts to enable auto-posting.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Card className="flex items-center p-4">
-                <Image src="https://placehold.co/40x40.png" data-ai-hint="instagram logo" alt="Instagram" width={40} height={40} className="rounded-md" />
-                <div className="ml-4 flex-grow">
-                  <p className="font-semibold">Instagram Business</p>
-                  <p className="text-sm text-muted-foreground">Not Connected</p>
-                </div>
-                <Button variant="outline"><LinkIcon className="mr-2 h-4 w-4" />Connect</Button>
-              </Card>
-              <Card className="flex items-center p-4">
-                <Image src="https://placehold.co/40x40.png" data-ai-hint="facebook logo" alt="Facebook" width={40} height={40} className="rounded-md" />
-                <div className="ml-4 flex-grow">
-                  <p className="font-semibold">Facebook Page</p>
-                  <p className="text-sm text-green-600">Connected as "My Biz Page"</p>
-                </div>
-                 <Button variant="destructive">Disconnect</Button>
-              </Card>
-              <Card className="flex items-center p-4">
-                <Image src="https://placehold.co/40x40.png" data-ai-hint="linkedin logo" alt="LinkedIn" width={40} height={40} className="rounded-md" />
-                <div className="ml-4 flex-grow">
-                  <p className="font-semibold">LinkedIn Company Page</p>
-                  <p className="text-sm text-muted-foreground">Not Connected</p>
-                </div>
-                <Button variant="outline"><LinkIcon className="mr-2 h-4 w-4" />Connect</Button>
-              </Card>
+              {connections.map((conn) => (
+                <Card key={conn.id} className="flex items-center p-4">
+                  <Image src={`https://placehold.co/40x40.png`} data-ai-hint={conn.logoHint} alt={conn.name} width={40} height={40} className="rounded-md" />
+                  <div className="ml-4 flex-grow">
+                    <p className="font-semibold">{conn.name}</p>
+                    {conn.connected ? (
+                      <p className="text-sm text-green-600">Connected as "{conn.accountName}"</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Not Connected</p>
+                    )}
+                  </div>
+                  {conn.connected ? (
+                    <Button variant="destructive" onClick={() => handleConnectionToggle(conn.id)}>Disconnect</Button>
+                  ) : (
+                    <Button variant="outline" onClick={() => handleConnectionToggle(conn.id)}>
+                      <LinkIcon className="mr-2 h-4 w-4" />
+                      Connect
+                    </Button>
+                  )}
+                </Card>
+              ))}
             </CardContent>
           </Card>
         </TabsContent>
