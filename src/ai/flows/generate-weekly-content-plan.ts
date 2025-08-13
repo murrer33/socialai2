@@ -39,6 +39,7 @@ const GenerateWeeklyContentPlanOutputSchema = z.object({
       hashtags: z.array(z.string()),
       visual_brief: z.string(),
       recommended_time_local: z.string().regex(/^\d{2}:\d{2}$/), // HH:mm format
+      time_rationale: z.string(),
       cta: z.string(),
     })
   ),
@@ -63,8 +64,8 @@ TASK:
 1) Propose a 7-post weekly plan: balance education/promo/engagement (e.g., 3/2/2).
 2) For each post: Title (5 words), Caption (120-180 words TR), CTA (1 line), 10-15 hashtags (relevant, Turkish + a few English).
 3) Suggest visual concept: (photo/flat-lay/product-in-use/behind-the-scenes).
-4) Recommend best posting time (local tr-TR, explain rationale briefly).
-Format JSON exactly with fields: week, posts[ {day, platforms, idea, caption_tr, caption_en, hashtags[], visual_brief, recommended_time_local, cta} ].
+4) Recommend best posting time (local tr-TR) and provide a rationale. Use this heuristic: For weekdays, choose a time between 12:00-14:00 or 18:00-21:00. For weekends, choose a time between 14:00-17:00.
+Format JSON exactly with fields: week, posts[ {day, platforms, idea, caption_tr, caption_en, hashtags[], visual_brief, recommended_time_local, time_rationale, cta} ].
 `,
 });
 

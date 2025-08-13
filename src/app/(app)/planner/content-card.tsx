@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Edit, MoreHorizontal, RefreshCw, Undo2, Clock, Loader2 } from "lucide-react";
+import { CheckCircle, Edit, MoreHorizontal, RefreshCw, Undo2, Clock, Loader2, Info } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import type { Post } from './page';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 type ContentCardProps = {
   post: Post;
@@ -63,6 +64,16 @@ export function ContentCard({ post, onEdit, onApprove, isGeneratingImage }: Cont
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="h-4 w-4" />
           <span>{post.recommended_time_local}</span>
+           <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-4 w-4 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{post.time_rationale}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </CardHeader>
 
