@@ -14,7 +14,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Bot, FileUp, Link as LinkIcon, UploadCloud, Loader2, Trash2, PlusCircle, Check } from "lucide-react"
 import Image from "next/image"
 import { useToast } from "@/hooks/use-toast"
-import { generateBrandBrief, GenerateBrandBriefInput } from "@/ai/flows/generate-brand-brief"
+import { generateBrandBrief } from "@/ai/flows/generate-brand-brief"
+import type { GenerateBrandBriefInput, GenerateBrandBriefOutput } from "@/ai/flows/generate-brand-brief"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
@@ -229,7 +230,7 @@ export default function SettingsPage() {
           audience: values.audience,
           tone: values.tone,
       };
-      const result = await generateBrandBrief(input);
+      const result: GenerateBrandBriefOutput = await generateBrandBrief(input);
       setBrandBrief(result.brandBrief);
       setToneTokens(result.toneTokens);
       toast({
@@ -671,3 +672,5 @@ export default function SettingsPage() {
     </div>
   )
 }
+
+    
