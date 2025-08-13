@@ -31,7 +31,7 @@ export function ContentCard({ post, onEdit, onApprove, isGeneratingImage }: Cont
   const isApproved = post.status === 'approved';
 
   return (
-    <Card className={`flex flex-col overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 ${isApproved ? 'border-primary/50' : ''}`}>
+    <Card className={`flex flex-col overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 ${isApproved ? 'border-primary' : ''}`}>
       <CardHeader className="p-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -69,14 +69,14 @@ export function ContentCard({ post, onEdit, onApprove, isGeneratingImage }: Cont
       <CardContent className="p-4 pt-0 flex-grow">
         <div className="space-y-4">
           <div className="relative aspect-square w-full rounded-lg overflow-hidden border">
-            {isGeneratingImage || !post.imageDataUri ? (
+            {isGeneratingImage ? (
               <div className="w-full h-full flex flex-col items-center justify-center bg-muted">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 <p className="text-sm text-muted-foreground mt-2">Generating image...</p>
               </div>
             ) : (
                <Image
-                src={post.imageDataUri}
+                src={post.imageDataUri || 'https://placehold.co/400x400/cccccc/ffffff.png?text=No+Image'}
                 alt={post.visual_brief}
                 data-ai-hint="social media post"
                 fill

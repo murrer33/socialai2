@@ -84,10 +84,11 @@ export default function PlannerPage() {
             title: 'Image Generation Failed',
             description: `Could not create an image for ${post.day}'s post.`,
           });
+          // Set a fallback placeholder on error
           setPlan(currentPlan => {
             if (!currentPlan) return null;
             const updatedPosts = currentPlan.posts.map(p => 
-              p.day === post.day ? { ...p, imageDataUri: 'https://placehold.co/400x400.png' } : p
+              p.day === post.day ? { ...p, imageDataUri: 'https://placehold.co/400x400/ff0000/ffffff.png?text=Error' } : p
             );
             return { ...currentPlan, posts: updatedPosts };
           });
@@ -205,5 +206,3 @@ export default function PlannerPage() {
     </div>
   );
 }
-
-    
