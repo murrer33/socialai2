@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Bot, FileUp, Link as LinkIcon, UploadCloud, Loader2, Trash2, PlusCircle } from "lucide-react"
 import Image from "next/image"
 import { useToast } from "@/hooks/use-toast"
-import { generateBrandBrief } from "@/ai/flows/generate-brand-brief"
+import { generateBrandBrief, GenerateBrandBriefInput } from "@/ai/flows/generate-brand-brief"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
@@ -109,15 +109,21 @@ export default function SettingsPage() {
 
   const form = useForm<BrandProfileFormValues>({
     resolver: zodResolver(brandProfileSchema),
+    // Simulate GET /brand
     defaultValues: {
-      companyName: "",
-      pitch: "",
-      audience: "",
-      sellingPoints: [{ value: "" }],
+      companyName: "Artisanal Coffee Istanbul",
+      pitch: "A cozy and friendly cafe in Istanbul, known for its artisanal coffee and homemade pastries. We want to be seen as a neighborhood gem.",
+      audience: "Young professionals and students in Istanbul who appreciate high-quality coffee and a relaxing atmosphere.",
+      sellingPoints: [
+        { value: "Specialty-grade, single-origin coffee beans" },
+        { value: "Freshly baked homemade pastries daily" },
+        { value: "Cozy ambiance with free Wi-Fi" },
+        { value: "Located in the heart of Kadıköy" },
+      ],
       tone: {
-          friendly: 50,
-          playful: 50,
-          simple: 50,
+          friendly: 80,
+          playful: 40,
+          simple: 70,
       },
       primaryColor: "#3F51B5",
     },
@@ -142,9 +148,11 @@ export default function SettingsPage() {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
+        // This simulates POST /assets and getting back a URL.
         const dataUri = reader.result as string;
         setLogoPreview(dataUri);
-        form.setValue("logo", dataUri);
+        // This sets the value in the form to be sent in PUT /brand
+        form.setValue("logo", dataUri); 
       };
       reader.readAsDataURL(file);
     }
@@ -167,11 +175,12 @@ export default function SettingsPage() {
     setBrandBrief("");
 
     try {
-      const result = await generateBrandBrief({
-        companyProfile: `${values.companyName}: ${values.pitch}`,
-        audience: values.audience,
-        tone: values.tone,
-      });
+      const input: GenerateBrandBriefInput = {
+          companyProfile: `${values.companyName}: ${values.pitch}`,
+          audience: values.audience,
+          tone: values.tone,
+      };
+      const result = await generateBrandBrief(input);
       setBrandBrief(result.brandBrief);
       setToneTokens(result.toneTokens);
       toast({
@@ -190,8 +199,9 @@ export default function SettingsPage() {
     }
   };
 
+  // Simulate PUT /brand
   const onSubmit = (data: BrandProfileFormValues) => {
-    console.log(data)
+    console.log("Simulating PUT /api/v1/brand with data:", data)
     // In a real app, this would also save this data to a global state/context
     // so the planner page can access it.
     toast({
@@ -274,7 +284,7 @@ export default function SettingsPage() {
                    <Card>
                     <CardHeader>
                         <CardTitle>Products & Services</CardTitle>
-                        <CardDescription>List your key offerings for the AI to use in content generation.</CardDescription>
+                        <CardDescription>List your key offerings for the AI to use in content generation. This corresponds to the `selling_points` in your brand profile.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {fields.map((field, index) => (
@@ -564,3 +574,5 @@ export default function SettingsPage() {
     </div>
   )
 }
+
+    

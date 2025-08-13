@@ -33,8 +33,8 @@ export default function PlannerPage() {
     setIsLoading(true);
     setPlan(null); // Clear previous plan
 
-    // In a real app, this data would come from a global state/context populated from the settings page.
-    const settings = {
+    // In a real app, this data would be fetched from GET /brand
+    const brandProfile = {
         brandBrief: 'A cozy and friendly cafe in Istanbul, known for its artisanal coffee and homemade pastries. We want to be seen as a neighborhood gem.',
         catalogItems: ['Latte', 'Croissant', 'Cheesecake', 'Turkish Coffee'],
         brandColor: '#3F51B5',
@@ -42,12 +42,11 @@ export default function PlannerPage() {
     };
 
     try {
-      // Step 1: Simulate calling the backend to generate the plan
-      // API Contract: POST /plans/generate {week_start?, language?} → creates content_plan + 7 draft posts
-      // In this mock, we call the Genkit flow directly.
+      // Simulate API call: POST /api/v1/plans/generate
+      console.log('Simulating POST /api/v1/plans/generate');
       const generatedPlan = await generateWeeklyContentPlan({
-        brandBrief: settings.brandBrief,
-        catalogItems: settings.catalogItems,
+        brandBrief: brandProfile.brandBrief,
+        catalogItems: brandProfile.catalogItems,
         holidaysEvents: 'No upcoming holidays.',
         preferredCadence: '7 posts per week',
         platforms: ['instagram', 'facebook', 'linkedin'],
@@ -56,22 +55,21 @@ export default function PlannerPage() {
       const postsWithStatus: Post[] = generatedPlan.posts.map(p => ({ ...p, status: 'draft' }));
       
       // Immediately set the plan with text content.
+      // This simulates the response from GET /api/v1/plans/current
       setPlan({ ...generatedPlan, posts: postsWithStatus });
       setIsLoading(false); 
       setIsGeneratingImages(true); 
 
-      // Step 2: Simulate the backend generating images and fetching the updated plan.
-      // API Contract: GET /plans/current → plan + posts (with image_url)
-      // In this mock, we generate images one-by-one and update the UI.
+      // Simulate the backend generating images via POST /api/v1/assets/generate
+      // and updating the post records. The frontend then re-fetches.
+      console.log('Simulating POST /api/v1/assets/generate for each post');
       const imagePromises = postsWithStatus.map(async (post) => {
         try {
-          // This simulates the `assets/generate` call for each post.
           const imageResult = await generateImageFromVisualBrief({
             visualBrief: post.visual_brief,
-            brandColor: settings.brandColor,
-            logoDataUri: settings.logoDataUri,
+            brandColor: brandProfile.brandColor,
+            logoDataUri: brandProfile.logoDataUri,
           });
-          // Update the specific post with its new image data URI
            setPlan(currentPlan => {
             if (!currentPlan) return null;
             const updatedPosts = currentPlan.posts.map(p => 
@@ -86,7 +84,6 @@ export default function PlannerPage() {
             title: 'Image Generation Failed',
             description: `Could not create an image for ${post.day}'s post.`,
           });
-          // Set a fallback image on error
           setPlan(currentPlan => {
             if (!currentPlan) return null;
             const updatedPosts = currentPlan.posts.map(p => 
@@ -118,24 +115,35 @@ export default function PlannerPage() {
   };
 
   const handleSavePost = (updatedPost: Post) => {
+    // Simulate API call: PUT /api/v1/posts/:id
+    console.log('Simulating PUT /api/v1/posts/:id with data:', updatedPost);
     if (plan) {
-      // API Contract: PUT /posts/:id {caption, hashtags, ...}
       const updatedPosts = plan.posts.map(p => (p.day === updatedPost.day ? updatedPost : p));
       setPlan({ ...plan, posts: updatedPosts });
+      toast({
+        title: "Post Updated",
+        description: "Your changes have been saved.",
+      });
     }
     setIsEditDialogOpen(false);
     setEditingPost(null);
   };
   
   const handleApprovePost = (postToApprove: Post) => {
+     // Simulate API call: PUT /api/v1/plans/:id/approve (for a single post)
+    console.log('Simulating approval for post:', postToApprove.day);
     if (plan) {
-      // API Contract: PUT /plans/:id/approve (for the whole plan) or a custom route for single post approval
+      const newStatus = postToApprove.status === 'approved' ? 'draft' : 'approved';
       const updatedPosts = plan.posts.map(p =>
         p.day === postToApprove.day
-          ? { ...p, status: p.status === 'approved' ? 'draft' : 'approved' }
+          ? { ...p, status: newStatus }
           : p
       );
       setPlan({ ...plan, posts: updatedPosts });
+       toast({
+        title: `Post ${newStatus === 'approved' ? 'Approved' : 'Unapproved'}`,
+        description: `The post for ${postToApprove.day} is now a ${newStatus}.`,
+      });
     }
   };
 
@@ -197,3 +205,5 @@ export default function PlannerPage() {
     </div>
   );
 }
+
+    

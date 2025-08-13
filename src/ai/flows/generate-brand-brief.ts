@@ -12,7 +12,7 @@ import {ai} from '@/ai/genkit';
 import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
-const GenerateBrandBriefInputSchema = z.object({
+export const GenerateBrandBriefInputSchema = z.object({
   companyProfile: z.string().describe('A description of the company profile.'),
   audience: z.string().describe('The target audience of the company.'),
   tone: z.object({
@@ -76,3 +76,5 @@ const generateBrandBriefFlow = ai.defineFlow(
     return output!;
   }
 );
+
+    
