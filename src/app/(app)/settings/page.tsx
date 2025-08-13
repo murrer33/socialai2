@@ -1,7 +1,8 @@
 
+
 'use client'
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { Bot, FileUp, Link as LinkIcon, UploadCloud, Loader2, Trash2, PlusCircle, Check } from "lucide-react"
+import { Bot, FileUp, Link as LinkIcon, UploadCloud, Loader2, Trash2, PlusCircle, Check, Users } from "lucide-react"
 import Image from "next/image"
 import { useToast } from "@/hooks/use-toast"
 import { generateBrandBrief } from "@/ai/flows/generate-brand-brief"
@@ -21,6 +22,7 @@ import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const brandProfileSchema = z.object({
   companyName: z.string().min(1, "Company name is required."),
@@ -53,6 +55,7 @@ type KnowledgeFact = {
 }
 
 type Plan = 'free' | 'basic' | 'pro';
+type Role = 'Owner' | 'Editor';
 
 const plans = [
     {
@@ -92,6 +95,7 @@ export default function SettingsPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [currentPlan, setCurrentPlan] = useState<Plan>('free');
+  const [role, setRole] = useState<Role>('Owner');
   const [connections, setConnections] = useState<Connection[]>([
     { id: 'instagram', name: 'Instagram Business', logoHint: 'instagram logo', connected: false },
     { id: 'facebook', name: 'Facebook Page', logoHint: 'facebook logo', connected: true, accountName: 'My Biz Page' },
@@ -103,6 +107,15 @@ export default function SettingsPage() {
       { id: 3, text: "We offer free shipping on all orders over 500 TL." },
   ]);
   const [newFact, setNewFact] = useState("");
+
+  const handleSwitchRole = () => {
+    const newRole = role === 'Owner' ? 'Editor' : 'Owner';
+    setRole(newRole);
+    toast({
+        title: "Role Switched",
+        description: `You are now acting as an ${newRole}. This is a simulated setting.`,
+    })
+  }
 
   const handleAddFact = () => {
       if (newFact.trim()) {
@@ -268,13 +281,29 @@ export default function SettingsPage() {
           Manage your brand, connections, and preferences.
         </p>
       </div>
+
+       <Card className="border-l-4 border-primary">
+            <CardHeader className="flex flex-row items-center gap-4">
+                <Users className="h-8 w-8 text-primary" />
+                <div>
+                    <CardTitle>Role-Based Access Control</CardTitle>
+                    <CardDescription>
+                       You are currently acting as an <span className="font-bold text-primary">{role}</span>. Editors have restricted access to sensitive settings.
+                    </CardDescription>
+                </div>
+                 <Button variant="outline" size="sm" className="ml-auto" onClick={handleSwitchRole}>
+                    Switch to {role === 'Owner' ? 'Editor' : 'Owner'}
+                </Button>
+            </CardHeader>
+        </Card>
+
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="profile">Brand Profile</TabsTrigger>
-          <TabsTrigger value="connections">Connections</TabsTrigger>
+          <TabsTrigger value="connections" disabled={role === 'Editor'}>Connections</TabsTrigger>
           <TabsTrigger value="knowledge">Knowledge Base</TabsTrigger>
           <TabsTrigger value="auto-reply">Auto-Reply</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
+          <TabsTrigger value="billing" disabled={role === 'Editor'}>Billing</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">
@@ -514,7 +543,16 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="connections" className="mt-6">
-          <Card>
+           {role === 'Editor' && (
+              <Alert variant="destructive" className="mb-6">
+                <Users className="h-4 w-4" />
+                <AlertTitle>Permission Denied</AlertTitle>
+                <AlertDescription>
+                  You do not have permission to manage connections. Please contact an Owner.
+                </AlertDescription>
+              </Alert>
+           )}
+          <Card disabled={role === 'Editor'}>
             <CardHeader>
               <CardTitle>Social Media Connections</CardTitle>
               <CardDescription>Connect your accounts to enable auto-posting.</CardDescription>
@@ -622,7 +660,16 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="billing" className="mt-6">
-            <Card>
+            {role === 'Editor' && (
+              <Alert variant="destructive" className="mb-6">
+                <Users className="h-4 w-4" />
+                <AlertTitle>Permission Denied</AlertTitle>
+                <AlertDescription>
+                  You do not have permission to manage billing. Please contact an Owner.
+                </AlertDescription>
+              </Alert>
+           )}
+            <Card disabled={role === 'Editor'}>
                 <CardHeader>
                     <CardTitle>Billing & Plan</CardTitle>
                     <CardDescription>Manage your subscription and payment details.</CardDescription>
@@ -672,5 +719,3 @@ export default function SettingsPage() {
     </div>
   )
 }
-
-    
