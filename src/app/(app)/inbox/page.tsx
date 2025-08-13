@@ -134,7 +134,9 @@ export default function InboxPage() {
                            <Bot className="h-5 w-5 text-primary" />
                            <h3 className="text-base font-semibold leading-none tracking-tight">AI Suggested Reply</h3>
                            {item.confidence !== undefined && (
-                            <Badge variant="outline" className="ml-auto">Confidence: {Math.round(item.confidence * 100)}%</Badge>
+                            <Badge variant={item.confidence > 0.8 ? 'default' : 'secondary'} className="ml-auto">
+                                Confidence: {Math.round(item.confidence * 100)}%
+                            </Badge>
                            )}
                         </div>
                       </CardHeader>
