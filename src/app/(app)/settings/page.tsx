@@ -568,7 +568,7 @@ export default function SettingsPage() {
                       <p className="text-sm text-muted-foreground">Not Connected</p>
                     )}
                   </div>
-                  <Button variant={conn.connected ? "destructive" : "outline"} onClick={() => handleConnectionToggle(conn.id)} disabled={role==='Editor'}>
+                  <Button variant={conn.connected ? "destructive" : "outline"} onClick={() => handleConnectionToggle(conn.id)} disabled={role === 'Editor' && conn.id === 'instagram'}>
                     {conn.connected ? null : <LinkIcon className="mr-2 h-4 w-4" />}
                     {conn.connected ? "Disconnect" : "Connect"}
                   </Button>
@@ -718,5 +718,3 @@ export default function SettingsPage() {
     </div>
   )
 }
-
-    
