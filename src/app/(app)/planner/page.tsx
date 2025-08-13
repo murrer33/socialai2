@@ -3,23 +3,40 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, Languages } from 'lucide-react';
+import { Bot, Languages, Loader2 } from 'lucide-react';
 import { ContentCard } from './content-card';
 import type { GenerateWeeklyContentPlanOutput } from '@/ai/flows/generate-weekly-content-plan';
-import { mockPlan } from './mock-plan';
+import { generateWeeklyContentPlan } from '@/ai/flows/generate-weekly-content-plan';
+import { useToast } from '@/hooks/use-toast';
 
 export default function PlannerPage() {
   const [plan, setPlan] = useState<GenerateWeeklyContentPlanOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleGeneratePlan = () => {
+  const handleGeneratePlan = async () => {
     setIsLoading(true);
-    // In a real app, you would call the AI flow here.
-    // For this MVP, we use mock data after a short delay.
-    setTimeout(() => {
-      setPlan(mockPlan);
+    try {
+      // In a real app, you would get these values from the settings page.
+      // For now, we'll use some default values.
+      const result = await generateWeeklyContentPlan({
+        brandBrief: 'A cozy and friendly cafe in Istanbul, known for its artisanal coffee and homemade pastries. We want to be seen as a neighborhood gem.',
+        catalogItems: ['Latte', 'Croissant', 'Cheesecake', 'Turkish Coffee'],
+        holidaysEvents: 'No upcoming holidays.',
+        preferredCadence: '5 posts per week',
+        platforms: ['instagram', 'facebook'],
+      });
+      setPlan(result);
+    } catch (error) {
+      console.error('Error generating plan:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error Generating Plan',
+        description: 'There was an issue creating your content plan. Please try again.',
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -34,7 +51,7 @@ export default function PlannerPage() {
         <div className="flex gap-2 items-center">
           <Button variant="outline"><Languages className="mr-2 h-4 w-4" /> EN/TR</Button>
           <Button onClick={handleGeneratePlan} disabled={isLoading}>
-            <Bot className="mr-2 h-4 w-4" />
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
             {isLoading ? 'Generating...' : plan ? 'Regenerate Plan' : 'Generate Plan'}
           </Button>
         </div>
@@ -63,6 +80,7 @@ export default function PlannerPage() {
                 </p>
             </div>
             <Button onClick={handleGeneratePlan} disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLoading ? 'Generating Plan...' : 'Generate Your First Plan'}
             </Button>
           </CardContent>
