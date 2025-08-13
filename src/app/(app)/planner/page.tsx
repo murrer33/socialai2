@@ -19,7 +19,7 @@ export type Post = GenerateWeeklyContentPlanOutput['posts'][number] & {
 type Plan = Omit<GenerateWeeklyContentPlanOutput, 'posts'> & { posts: Post[] };
 
 // Placeholder logo. In a real app, this would be uploaded by the user in settings.
-const PLACEHOLDER_LOGO_DATA_URI = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWNvZmZlZSI+PHBhdGggZD0iTTExIDVIOThhMiAyIDAgMCAxIDIgMnY0YTQgNCAwIDAgMCA0IDRoMmEyIDIgMCAwIDEgMiAydjZhNiA2IDAgMCAxLTYgNkg3YTYgNiAwIDAgMS02LTZWOGEyIDIgMCAwIDEgMi0yaDJhNCA0IDAgMCAwIDQtNE0xIDVWNE01IDVWNE05IDVWNCIvPjwvc3ZnPg==';
+const PLACEHOLDER_LOGO_DATA_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
 export default function PlannerPage() {
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -83,7 +83,7 @@ export default function PlannerPage() {
            setPlan(currentPlan => {
             if (!currentPlan) return null;
             const updatedPosts = currentPlan.posts.map(p => 
-              p.day === post.day ? { ...p, imageDataUri: imageResult.imageDataUri } : p
+              p.post_id === post.post_id ? { ...p, imageDataUri: imageResult.imageDataUri } : p
             );
             return { ...currentPlan, posts: updatedPosts };
           });
@@ -98,7 +98,7 @@ export default function PlannerPage() {
           setPlan(currentPlan => {
             if (!currentPlan) return null;
             const updatedPosts = currentPlan.posts.map(p => 
-              p.day === post.day ? { ...p, imageDataUri: 'https://placehold.co/400x400/ff0000/ffffff.png?text=Error' } : p
+              p.post_id === post.post_id ? { ...p, imageDataUri: 'https://placehold.co/400x400/ff0000/ffffff.png?text=Error' } : p
             );
             return { ...currentPlan, posts: updatedPosts };
           });
@@ -129,7 +129,7 @@ export default function PlannerPage() {
     // Simulate API call: PUT /api/v1/posts/:id
     console.log('Simulating PUT /api/v1/posts/:id with data:', updatedPost);
     if (plan) {
-      const updatedPosts = plan.posts.map(p => (p.day === updatedPost.day ? updatedPost : p));
+      const updatedPosts = plan.posts.map(p => (p.post_id === updatedPost.post_id ? updatedPost : p));
       setPlan({ ...plan, posts: updatedPosts });
       toast({
         title: "Post Updated",
@@ -146,7 +146,7 @@ export default function PlannerPage() {
     if (plan) {
       const newStatus = postToApprove.status === 'approved' ? 'draft' : 'approved';
       const updatedPosts = plan.posts.map(p =>
-        p.day === postToApprove.day
+        p.post_id === postToApprove.post_id
           ? { ...p, status: newStatus }
           : p
       );
