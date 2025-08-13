@@ -56,21 +56,27 @@ export default function PlannerPage() {
         platforms: ['instagram', 'facebook', 'linkedin'],
       });
       
-      const postsWithStatus: Post[] = generatedPlan.posts.map(p => ({ ...p, status: 'draft' }));
+      const postsWithStatus: Post[] = generatedPlan.posts.map(p => ({ 
+        ...p, 
+        status: 'draft',
+        // Set a placeholder initially
+        imageDataUri: 'https://placehold.co/400x400/cccccc/ffffff.png?text=Generating...',
+      }));
       
-      // Immediately set the plan with text content.
-      // This simulates the response from GET /api/v1/plans/current
+      // Immediately set the plan with text content and placeholders
       setPlan({ ...generatedPlan, posts: postsWithStatus });
       setIsLoading(false); 
       setIsGeneratingImages(true); 
 
       // Simulate the backend generating images via POST /api/v1/assets/generate
-      // and updating the post records. The frontend then re-fetches.
       console.log('Simulating POST /api/v1/assets/generate for each post');
       const imagePromises = postsWithStatus.map(async (post) => {
         try {
+          // Create a richer prompt for better images
+          const imagePrompt = `A social media image for a cafe post titled "${post.title}". The caption is: "${post.caption_en}". Visual style should be: "${post.visualIdea}".`;
+
           const imageResult = await generateImageForPost({
-            prompt: post.visualIdea,
+            prompt: imagePrompt,
             brandColors: { primary: brandProfile.brandColor },
             logoDataUri: brandProfile.logoDataUri,
           });
@@ -175,7 +181,7 @@ export default function PlannerPage() {
       {plan ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {plan.posts.map((post, index) => (
-            <ContentCard key={index} post={post} onEdit={handleEditClick} onApprove={handleApprovePost} isGeneratingImage={!post.imageDataUri} />
+            <ContentCard key={index} post={post} onEdit={handleEditClick} onApprove={handleApprovePost} isGeneratingImage={isGeneratingImages && post.imageDataUri?.includes('placehold.co')} />
           ))}
         </div>
       ) : (
