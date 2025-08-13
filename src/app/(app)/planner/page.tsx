@@ -11,7 +11,6 @@ import { generateWeeklyContentPlan } from '@/ai/flows/generate-weekly-content-pl
 import { generateImageFromVisualBrief } from '@/ai/flows/generate-image-from-visual-brief';
 import { useToast } from '@/hooks/use-toast';
 import { EditPostDialog } from './edit-post-dialog';
-import { Clock } from 'lucide-react';
 
 export type Post = GenerateWeeklyContentPlanOutput['posts'][number] & { 
   status: 'draft' | 'approved' | 'published';
@@ -42,9 +41,11 @@ export default function PlannerPage() {
         logoDataUri: PLACEHOLDER_LOGO_DATA_URI
     };
 
-
     try {
-      const result = await generateWeeklyContentPlan({
+      // Step 1: Simulate calling the backend to generate the plan
+      // API Contract: POST /plans/generate {week_start?, language?} → creates content_plan + 7 draft posts
+      // In this mock, we call the Genkit flow directly.
+      const generatedPlan = await generateWeeklyContentPlan({
         brandBrief: settings.brandBrief,
         catalogItems: settings.catalogItems,
         holidaysEvents: 'No upcoming holidays.',
@@ -52,20 +53,32 @@ export default function PlannerPage() {
         platforms: ['instagram', 'facebook', 'linkedin'],
       });
       
-      const postsWithStatus: Post[] = result.posts.map(p => ({ ...p, status: 'draft' }));
-      setPlan({ ...result, posts: postsWithStatus });
-      setIsLoading(false); // Stop main loading indicator
-      setIsGeneratingImages(true); // Start image loading indicator
+      const postsWithStatus: Post[] = generatedPlan.posts.map(p => ({ ...p, status: 'draft' }));
+      
+      // Immediately set the plan with text content.
+      setPlan({ ...generatedPlan, posts: postsWithStatus });
+      setIsLoading(false); 
+      setIsGeneratingImages(true); 
 
-      // Now, generate images for each post
+      // Step 2: Simulate the backend generating images and fetching the updated plan.
+      // API Contract: GET /plans/current → plan + posts (with image_url)
+      // In this mock, we generate images one-by-one and update the UI.
       const imagePromises = postsWithStatus.map(async (post) => {
         try {
+          // This simulates the `assets/generate` call for each post.
           const imageResult = await generateImageFromVisualBrief({
             visualBrief: post.visual_brief,
             brandColor: settings.brandColor,
             logoDataUri: settings.logoDataUri,
           });
-          return { day: post.day, imageDataUri: imageResult.imageDataUri };
+          // Update the specific post with its new image data URI
+           setPlan(currentPlan => {
+            if (!currentPlan) return null;
+            const updatedPosts = currentPlan.posts.map(p => 
+              p.day === post.day ? { ...p, imageDataUri: imageResult.imageDataUri } : p
+            );
+            return { ...currentPlan, posts: updatedPosts };
+          });
         } catch (imgError) {
           console.error(`Error generating image for ${post.day}:`, imgError);
           toast({
@@ -73,20 +86,18 @@ export default function PlannerPage() {
             title: 'Image Generation Failed',
             description: `Could not create an image for ${post.day}'s post.`,
           });
-          return { day: post.day, imageDataUri: 'https://placehold.co/400x400.png' }; // Fallback
+          // Set a fallback image on error
+          setPlan(currentPlan => {
+            if (!currentPlan) return null;
+            const updatedPosts = currentPlan.posts.map(p => 
+              p.day === post.day ? { ...p, imageDataUri: 'https://placehold.co/400x400.png' } : p
+            );
+            return { ...currentPlan, posts: updatedPosts };
+          });
         }
       });
       
-      const settledImageResults = await Promise.all(imagePromises);
-
-      setPlan(currentPlan => {
-        if (!currentPlan) return null;
-        const updatedPosts = currentPlan.posts.map(post => {
-          const imageResult = settledImageResults.find(res => res.day === post.day);
-          return imageResult ? { ...post, imageDataUri: imageResult.imageDataUri } : post;
-        });
-        return { ...currentPlan, posts: updatedPosts };
-      });
+      await Promise.all(imagePromises);
 
     } catch (error) {
       console.error('Error generating plan:', error);
@@ -108,6 +119,7 @@ export default function PlannerPage() {
 
   const handleSavePost = (updatedPost: Post) => {
     if (plan) {
+      // API Contract: PUT /posts/:id {caption, hashtags, ...}
       const updatedPosts = plan.posts.map(p => (p.day === updatedPost.day ? updatedPost : p));
       setPlan({ ...plan, posts: updatedPosts });
     }
@@ -117,6 +129,7 @@ export default function PlannerPage() {
   
   const handleApprovePost = (postToApprove: Post) => {
     if (plan) {
+      // API Contract: PUT /plans/:id/approve (for the whole plan) or a custom route for single post approval
       const updatedPosts = plan.posts.map(p =>
         p.day === postToApprove.day
           ? { ...p, status: p.status === 'approved' ? 'draft' : 'approved' }
