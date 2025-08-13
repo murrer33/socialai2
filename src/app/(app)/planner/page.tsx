@@ -19,6 +19,9 @@ export type Post = GenerateWeeklyContentPlanOutput['posts'][number] & {
 };
 type Plan = Omit<GenerateWeeklyContentPlanOutput, 'posts'> & { posts: Post[] };
 
+// Placeholder logo. In a real app, this would be uploaded by the user in settings.
+const PLACEHOLDER_LOGO_DATA_URI = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWNvZmZlZSI+PHBhdGggZD0iTTExIDVIOThhMiAyIDAgMCAxIDIgMnY0YTQgNCAwIDAgMCA0IDRoMmEyIDIgMCAwIDEgMiAydjZhNiA2IDAgMCAxLTYgNkg3YTYgNiAwIDAgMS02LTZWOGEyIDIgMCAwIDEgMi0yaDJhNCA0IDAgMCAwIDQtNE0xIDVWNE01IDVWNE05IDVWNCIvPjwvc3ZnPg==';
+
 export default function PlannerPage() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,8 +50,8 @@ export default function PlannerPage() {
       // Now, generate images for each post
       const imagePromises = postsWithStatus.map(async (post) => {
         try {
-           // In a real app, this would come from settings. For now, using a placeholder.
-          const logoDataUri = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJvdC1tZXNzYWdlLXNxdWFyZSI+PHBhdGggZD0iTTIyIDEyVjZoLTZNNiAxMmgybDJhNS40NCA1LjQ0IDAgMCAxIDYgMEwyMiAxMiIvPjxwYXRoIGQ9Ik0xMiA3djYiLz48cGF0aCBkPSJNOS4wNiA1LjVsNS44OCA1Ljg4Ii8+PHBhdGggZD0iTTIgMTJWMmgyMHYxMGEzIDMgMCAwIDEgLTMgM0gyMSIgcC8+PHBhdGggZD0iTTcgOHY1Ii8+PHBhdGggZD0iTTMgNmgyIi8+PC9zdmc+';
+           // In a real app, this would come from user settings. For now, using a placeholder.
+          const logoDataUri = PLACEHOLDER_LOGO_DATA_URI;
 
           const imageResult = await generateImageFromVisualBrief({
             visualBrief: post.visual_brief,

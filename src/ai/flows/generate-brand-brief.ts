@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const GenerateBrandBriefInputSchema = z.object({
@@ -44,6 +45,7 @@ const prompt = ai.definePrompt({
   name: 'generateBrandBriefPrompt',
   input: {schema: GenerateBrandBriefInputSchema},
   output: {schema: GenerateBrandBriefOutputSchema},
+  model: googleAI.model('gemini-2.0-flash'),
   prompt: `You are a marketing expert tasked with creating a brand brief.
 
   Based on the following information, generate a concise brand brief (120-200 words) and identify tone tokens.

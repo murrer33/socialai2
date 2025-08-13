@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const GenerateWeeklyContentPlanInputSchema = z.object({
@@ -46,6 +47,7 @@ const weeklyPlanPrompt = ai.definePrompt({
   name: 'weeklyPlanPrompt',
   input: {schema: GenerateWeeklyContentPlanInputSchema},
   output: {schema: GenerateWeeklyContentPlanOutputSchema},
+  model: googleAI.model('gemini-2.0-flash'),
   prompt: `You are a senior social media strategist for SMEs in Turkey.
 
   Generate a weekly social media content plan based on the following information:

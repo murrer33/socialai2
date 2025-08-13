@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const AutoReplyToMessageInputSchema = z.object({
@@ -17,6 +18,7 @@ const AutoReplyToMessageInputSchema = z.object({
     .describe('The intent detected in the inbound message (price, availability, hours, faq).'),
   knowledgeBaseFacts: z
     .string()
+
     .describe('Relevant facts from the knowledge base to help formulate the reply.'),
   policy: z
     .string()
@@ -49,6 +51,7 @@ const prompt = ai.definePrompt({
   name: 'autoReplyToMessagePrompt',
   input: {schema: AutoReplyToMessageInputSchema},
   output: {schema: AutoReplyToMessageOutputSchema},
+  model: googleAI.model('gemini-2.0-flash'),
   prompt: `You are a polite, concise, and helpful customer support agent for a Turkish business. Your goal is to answer user questions based on the provided knowledge base and follow the given policy. Always reply in Turkish unless the user's message is in English.
 
 You are provided with the following information:
