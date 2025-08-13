@@ -28,29 +28,29 @@ type Message = {
 const initialMessages: Omit<Message, 'isGenerating' | 'isRefining' | 'aiReply' | 'confidence' | 'label'>[] = [
   {
     id: 1,
-    user: "Ayşe Yılmaz",
-    avatar: "https://placehold.co/40x40.png?text=AY",
+    user: "User 1",
+    avatar: "https://placehold.co/40x40.png?text=U1",
     platform: "instagram",
     message: "Merhaba, bu ürünün fiyatı nedir?",
   },
   {
     id: 2,
-    user: "John Doe",
-    avatar: "https://placehold.co/40x40.png?text=JD",
+    user: "User 2",
+    avatar: "https://placehold.co/40x40.png?text=U2",
     platform: "facebook",
     message: "Bu hizmetinizden hiç memnun kalmadım.",
   },
   {
     id: 3,
-    user: "Ahmet Kaya",
-    avatar: "https://placehold.co/40x40.png?text=AK",
+    user: "User 3",
+    avatar: "https://placehold.co/40x40.png?text=U3",
     platform: "instagram",
     message: "Mağazanız saat kaça kadar açık?",
   },
   {
     id: 4,
-    user: "Fatma B.",
-    avatar: "https://placehold.co/40x40.png?text=FB",
+    user: "User 4",
+    avatar: "https://placehold.co/40x40.png?text=U4",
     platform: "instagram",
     message: "Harika bir ürün, çok teşekkürler! ❤️",
   }
@@ -58,54 +58,56 @@ const initialMessages: Omit<Message, 'isGenerating' | 'isRefining' | 'aiReply' |
 
 export default function InboxPage() {
     const [messages, setMessages] = useState<Message[]>(
-        initialMessages.map(m => ({ ...m, isGenerating: true, isRefining: false }))
+        initialMessages.map(m => ({ ...m, isGenerating: false, isRefining: false }))
     );
     const { toast } = useToast();
 
     // In a real app, this would come from the user's settings (GET /brand)
     const brandTone = { friendly: 80, playful: 40, simple: 70 };
 
+    // This effect runs once to generate a reply for the first message,
+    // simulating a more realistic on-demand or webhook-driven workflow.
     useEffect(() => {
-        const generateReplies = async () => {
-            // In a real app, these would come from the user's settings (GET /knowledge_base & /brand)
-            const knowledgeBaseFacts = "Store hours are 9am-6pm on weekdays, 10am-4pm on weekends. We are located at 123 Main St, Istanbul. We offer free shipping on all orders over 500 TL. The price for product X is 129,99 TL. Product Y is available in blue.";
-            const policy = "Be polite and concise. If you don't know the answer, say you will get a human to help.";
+        const generateInitialReply = async () => {
+            const firstMessage = messages[0];
+            if (firstMessage && !firstMessage.aiReply) {
+                 setMessages(prev => prev.map(m => m.id === firstMessage.id ? { ...m, isGenerating: true } : m));
 
-            for (const message of initialMessages) {
-                const messageInState = messages.find(m => m.id === message.id);
-                if (messageInState?.isGenerating) { 
-                    try {
-                        const input: AutoReplyToMessageInput = {
-                            knowledgeBaseFacts,
-                            policy,
-                            messageText: message.message,
-                        };
+                // In a real app, these would come from the user's settings (GET /knowledge_base & /brand)
+                const knowledgeBaseFacts = "Store hours are 9am-6pm on weekdays, 10am-4pm on weekends. We are located at 123 Main St, Istanbul. We offer free shipping on all orders over 500 TL. The price for product X is 129,99 TL. Product Y is available in blue.";
+                const policy = "Be polite and concise. If you don't know the answer, say you will get a human to help.";
 
-                        const result = await autoReplyToMessage(input);
-                        
-                        setMessages(prev => prev.map(m => 
-                            m.id === message.id 
-                            ? { ...m, aiReply: result.reply, confidence: result.confidenceLevel, label: result.label, isGenerating: false } 
-                            : m
-                        ));
+                try {
+                    const input: AutoReplyToMessageInput = {
+                        knowledgeBaseFacts,
+                        policy,
+                        messageText: firstMessage.message,
+                    };
 
-                    } catch (error) {
-                        console.error('Error generating reply for message', message.id, error);
-                        toast({
-                            variant: 'destructive',
-                            title: 'AI Reply Failed',
-                            description: `Could not generate a reply for the message from ${message.user}.`,
-                        });
-                         setMessages(prev => prev.map(m => 
-                            m.id === message.id 
-                            ? { ...m, isGenerating: false, aiReply: "Could not generate reply." } 
-                            : m
-                        ));
-                    }
+                    const result = await autoReplyToMessage(input);
+                    
+                    setMessages(prev => prev.map(m => 
+                        m.id === firstMessage.id 
+                        ? { ...m, aiReply: result.reply, confidence: result.confidenceLevel, label: result.label, isGenerating: false } 
+                        : m
+                    ));
+
+                } catch (error) {
+                    console.error('Error generating reply for message', firstMessage.id, error);
+                    toast({
+                        variant: 'destructive',
+                        title: 'AI Reply Failed',
+                        description: `Could not generate a reply for the message from ${firstMessage.user}.`,
+                    });
+                     setMessages(prev => prev.map(m => 
+                        m.id === firstMessage.id 
+                        ? { ...m, isGenerating: false, aiReply: "Could not generate reply." } 
+                        : m
+                    ));
                 }
             }
         };
-        generateReplies();
+        generateInitialReply();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); 
 
@@ -195,7 +197,7 @@ export default function InboxPage() {
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 <span>Generating reply...</span>
                             </div>
-                        ) : (item.label === 'Complaint' || item.label === 'Sensitive') ? (
+                        ) : !item.aiReply && (item.label === 'Complaint' || item.label === 'Sensitive') ? (
                              <div className="flex items-center gap-3 p-4 rounded-md border border-amber-500/50 bg-amber-500/10 text-amber-800">
                                 <ShieldAlert className="h-6 w-6 text-amber-600" />
                                 <div className="flex-1">
@@ -203,7 +205,7 @@ export default function InboxPage() {
                                     <p className="text-sm">The AI classified this message as a '{item.label}' and will not suggest a reply.</p>
                                 </div>
                              </div>
-                        ) : (
+                        ) : item.aiReply ? (
                             <>
                             <Textarea 
                                 value={item.aiReply}
@@ -219,6 +221,10 @@ export default function InboxPage() {
                                 <Button size="sm"><CornerDownLeft className="h-4 w-4 mr-2"/>Send Reply</Button>
                             </div>
                             </>
+                        ) : (
+                            <div className="text-sm text-muted-foreground italic text-center py-4">
+                                AI reply not generated for this message.
+                            </div>
                         )}
                       </CardContent>
                     </Card>
