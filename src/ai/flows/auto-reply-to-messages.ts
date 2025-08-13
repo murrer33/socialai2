@@ -29,14 +29,10 @@ const AutoReplyToMessageInputSchema = z.object({
 export type AutoReplyToMessageInput = z.infer<typeof AutoReplyToMessageInputSchema>;
 
 const AutoReplyToMessageOutputSchema = z.object({
-  reply: z
+  suggestedReply: z
     .string()
     .describe('The AI-generated reply to the inbound message. If the message is a complaint or sensitive, this should be an empty string.'),
-  followUpQuestion: z
-    .string()
-    .optional()
-    .describe('An optional follow-up question to engage the user further.'),
-  confidenceLevel: z.number().describe('The AI confidence level for the generated reply, from 0 to 1.'),
+  confidence: z.number().describe('The AI confidence level for the generated reply, from 0 to 1.'),
   label: z.enum(['FAQ', 'Engagement', 'Complaint', 'Sensitive']).describe('The classification label for the message.'),
 });
 export type AutoReplyToMessageOutput = z.infer<typeof AutoReplyToMessageOutputSchema>;
@@ -59,9 +55,8 @@ const prompt = ai.definePrompt({
       *   **Sensitive**: The user is mentioning a sensitive topic that requires a human.
 
   2.  **Draft a Reply (or Don't):**
-      *   If the label is **Complaint** or **Sensitive**, DO NOT draft a reply. The \`reply\` field in your output must be an empty string. A human must handle this.
+      *   If the label is **Complaint** or **Sensitive**, DO NOT draft a reply. The \`suggestedReply\` field in your output must be an empty string. A human must handle this.
       *   If the label is **FAQ** or **Engagement**, draft a polite, concise, 1-2 sentence reply in Turkish using the provided "Knowledge Base Facts". Adhere strictly to the "Policy".
-      *   Include a friendly, optional follow-up question if it feels natural.
       *   Estimate your confidence level (0.0 to 1.0) based on how well the knowledge base answers the user's question.
 
   **User Message:** "{{{messageText}}}"

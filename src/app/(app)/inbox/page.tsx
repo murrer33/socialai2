@@ -88,7 +88,7 @@ export default function InboxPage() {
                     
                     setMessages(prev => prev.map(m => 
                         m.id === firstMessage.id 
-                        ? { ...m, aiReply: result.reply, confidence: result.confidenceLevel, label: result.label, isGenerating: false } 
+                        ? { ...m, aiReply: result.suggestedReply, confidence: result.confidence, label: result.label, isGenerating: false } 
                         : m
                     ));
 

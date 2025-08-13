@@ -58,7 +58,8 @@ Palette: ${input.brandColors.primary}${input.brandColors.secondary ? `, ${input.
 The image should have a 1:1 aspect ratio.
 Avoid using realistic human faces to ensure safety.
 Include the provided logo.
-{{#if productShotDataUri}}Incorporate the provided product shot.{{/if}}`;
+${input.productShotDataUri ? 'Incorporate the provided product shot.' : ''}
+`;
     
     const {media} = await ai.generate({
       // IMPORTANT: ONLY the googleai/gemini-2.0-flash-preview-image-generation model is able to generate images. You MUST use exactly this model to generate images.

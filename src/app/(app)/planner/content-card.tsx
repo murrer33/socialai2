@@ -88,7 +88,7 @@ export function ContentCard({ post, onEdit, onApprove, isGeneratingImage }: Cont
             ) : (
                <Image
                 src={post.imageDataUri || 'https://placehold.co/400x400/cccccc/ffffff.png?text=No+Image'}
-                alt={post.visual_brief}
+                alt={post.visualIdea}
                 data-ai-hint="social media post"
                 fill
                 className="object-cover"

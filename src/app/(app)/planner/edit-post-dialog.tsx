@@ -58,7 +58,7 @@ export function EditPostDialog({ post, isOpen, onOpenChange, onSave }: EditPostD
     try {
       const result = await generateHashtags({
         caption: caption,
-        product: post.idea, // Assuming idea is the product
+        product: post.title, // Assuming title is the product
         // In a real app, city would come from brand settings
         city: 'Istanbul',
       });

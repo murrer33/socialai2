@@ -70,7 +70,7 @@ export default function PlannerPage() {
       const imagePromises = postsWithStatus.map(async (post) => {
         try {
           const imageResult = await generateImageForPost({
-            prompt: post.visual_brief,
+            prompt: post.visualIdea,
             brandColors: { primary: brandProfile.brandColor },
             logoDataUri: brandProfile.logoDataUri,
           });

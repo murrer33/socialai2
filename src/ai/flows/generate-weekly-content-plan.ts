@@ -28,19 +28,23 @@ const GenerateWeeklyContentPlanInputSchema = z.object({
 export type GenerateWeeklyContentPlanInput = z.infer<typeof GenerateWeeklyContentPlanInputSchema>;
 
 const GenerateWeeklyContentPlanOutputSchema = z.object({
-  week: z.string().describe('The week in YYYY-WW format.'),
+  plan_id: z.string().describe('The unique identifier for the generated plan.'),
+  week_start: z.string().describe('The starting date of the week in YYYY-MM-DD format.'),
   posts: z.array(
     z.object({
+      post_id: z.string().describe('The unique identifier for the post.'),
       day: z.enum(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']),
       platforms: z.array(z.enum(['instagram', 'facebook', 'linkedin'])),
-      idea: z.string(),
+      title: z.string(),
       caption_tr: z.string(),
       caption_en: z.string(),
       hashtags: z.array(z.string()),
-      visual_brief: z.string(),
+      visualIdea: z.string(),
+      bestTime: z.string().describe('The recommended posting time in ISO 8601 format.'),
       recommended_time_local: z.string().regex(/^\d{2}:\d{2}$/), // HH:mm format
       time_rationale: z.string(),
       cta: z.string(),
+      status: z.enum(['draft', 'approved', 'published']),
     })
   ),
 });
@@ -63,9 +67,10 @@ Selling points: {{#each selling_points}}{{{this}}}{{#unless @last}}, {{/unless}}
 TASK:
 1) Propose a 7-post weekly plan: balance education/promo/engagement (e.g., 3/2/2).
 2) For each post: Title (5 words), Caption (120-180 words TR), CTA (1 line), 10-15 hashtags (relevant, Turkish + a few English).
-3) Suggest visual concept: (photo/flat-lay/product-in-use/behind-the-scenes).
-4) Recommend best posting time (local tr-TR) and provide a rationale. Use this heuristic: For weekdays, choose a time between 12:00-14:00 or 18:00-21:00. For weekends, choose a time between 14:00-17:00.
-Format JSON exactly with fields: week, posts[ {day, platforms, idea, caption_tr, caption_en, hashtags[], visual_brief, recommended_time_local, time_rationale, cta} ].
+3) Suggest visual concept (visualIdea): (photo/flat-lay/product-in-use/behind-the-scenes).
+4. For bestTime, return a full ISO 8601 timestamp for a date next week.
+4) Recommend best posting time (local tr-TR, recommended_time_local) and provide a rationale. Use this heuristic: For weekdays, choose a time between 12:00-14:00 or 18:00-21:00. For weekends, choose a time between 14:00-17:00.
+Format JSON exactly with fields: plan_id, week_start, posts[ {post_id, day, platforms, title, caption_tr, caption_en, hashtags[], visualIdea, bestTime, recommended_time_local, time_rationale, cta, status: 'draft'} ].
 `,
 });
 
