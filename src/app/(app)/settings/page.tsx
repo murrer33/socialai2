@@ -90,20 +90,25 @@ export default function SettingsPage() {
   };
 
   const handleConnectionToggle = (id: Connection['id']) => {
+    const isConnecting = !connections.find(c => c.id === id)?.connected;
+    
+    // Simulate API call and success
     setConnections(prev =>
       prev.map(conn =>
         conn.id === id
           ? {
               ...conn,
               connected: !conn.connected,
+              // In a real app, this name would come from the OAuth callback
               accountName: !conn.connected ? `Connected ${conn.name}` : undefined,
             }
           : conn
       )
     );
+
     toast({
-        title: "Connection Updated",
-        description: `Your ${id} account has been ${connections.find(c => c.id === id)?.connected ? 'disconnected' : 'connected'}.`,
+        title: `Connection ${isConnecting ? 'Successful' : 'Removed'}`,
+        description: `Your ${id} account has been ${isConnecting ? 'connected' : 'disconnected'}.`,
     })
   };
 
