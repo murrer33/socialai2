@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Bot, CornerDownLeft, Wand2, Loader2 } from "lucide-react";
+import { Bot, CornerDownLeft, Wand2, Loader2, ShieldAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { autoReplyToMessage, AutoReplyToMessageInput } from "@/ai/flows/auto-reply-to-messages";
 import { polishCaption, PolishCaptionInput } from "@/ai/flows/polish-caption";
@@ -20,11 +20,12 @@ type Message = {
   message: string;
   aiReply?: string;
   confidence?: number;
+  label?: 'FAQ' | 'Engagement' | 'Complaint' | 'Sensitive';
   isGenerating: boolean;
   isRefining: boolean;
 };
 
-const initialMessages: Omit<Message, 'isGenerating' | 'isRefining' | 'aiReply' | 'confidence'>[] = [
+const initialMessages: Omit<Message, 'isGenerating' | 'isRefining' | 'aiReply' | 'confidence' | 'label'>[] = [
   {
     id: 1,
     user: "Ayşe Yılmaz",
@@ -37,7 +38,7 @@ const initialMessages: Omit<Message, 'isGenerating' | 'isRefining' | 'aiReply' |
     user: "John Doe",
     avatar: "https://placehold.co/40x40.png?text=JD",
     platform: "facebook",
-    message: "Do you have this in blue?",
+    message: "Bu hizmetinizden hiç memnun kalmadım.",
   },
   {
     id: 3,
@@ -46,6 +47,13 @@ const initialMessages: Omit<Message, 'isGenerating' | 'isRefining' | 'aiReply' |
     platform: "instagram",
     message: "Mağazanız saat kaça kadar açık?",
   },
+  {
+    id: 4,
+    user: "Fatma B.",
+    avatar: "https://placehold.co/40x40.png?text=FB",
+    platform: "instagram",
+    message: "Harika bir ürün, çok teşekkürler! ❤️",
+  }
 ];
 
 export default function InboxPage() {
@@ -59,7 +67,7 @@ export default function InboxPage() {
 
     useEffect(() => {
         const generateReplies = async () => {
-            // In a real app, these would come from the user's settings.
+            // In a real app, these would come from the user's settings (GET /knowledge_base & /brand)
             const knowledgeBaseFacts = "Store hours are 9am-6pm on weekdays, 10am-4pm on weekends. We are located at 123 Main St, Istanbul. We offer free shipping on all orders over 500 TL. The price for product X is 129,99 TL. Product Y is available in blue.";
             const policy = "Be polite and concise. If you don't know the answer, say you will get a human to help.";
 
@@ -68,8 +76,6 @@ export default function InboxPage() {
                 if (messageInState?.isGenerating) { 
                     try {
                         const input: AutoReplyToMessageInput = {
-                            detectedIntent: message.message.includes("fiyat") || message.message.toLowerCase().includes("price") ? "price" : 
-                                            message.message.includes("saat") || message.message.toLowerCase().includes("hours") ? "hours" : "faq",
                             knowledgeBaseFacts,
                             policy,
                             messageText: message.message,
@@ -79,7 +85,7 @@ export default function InboxPage() {
                         
                         setMessages(prev => prev.map(m => 
                             m.id === message.id 
-                            ? { ...m, aiReply: result.reply, confidence: result.confidenceLevel, isGenerating: false } 
+                            ? { ...m, aiReply: result.reply, confidence: result.confidenceLevel, label: result.label, isGenerating: false } 
                             : m
                         ));
 
@@ -173,6 +179,9 @@ export default function InboxPage() {
                         <div className="flex items-center gap-2">
                            <Bot className="h-5 w-5 text-primary" />
                            <h3 className="text-base font-semibold leading-none tracking-tight">AI Suggested Reply</h3>
+                            {item.label && (
+                                <Badge variant={item.label === 'Complaint' || item.label === 'Sensitive' ? 'destructive' : 'outline'} className="ml-2">{item.label}</Badge>
+                            )}
                            {item.confidence !== undefined && (
                             <Badge variant={item.confidence > 0.8 ? 'default' : 'secondary'} className="ml-auto">
                                 Confidence: {Math.round(item.confidence * 100)}%
@@ -186,6 +195,14 @@ export default function InboxPage() {
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 <span>Generating reply...</span>
                             </div>
+                        ) : (item.label === 'Complaint' || item.label === 'Sensitive') ? (
+                             <div className="flex items-center gap-3 p-4 rounded-md border border-amber-500/50 bg-amber-500/10 text-amber-800">
+                                <ShieldAlert className="h-6 w-6 text-amber-600" />
+                                <div className="flex-1">
+                                    <h4 className="font-semibold">Requires Human Review</h4>
+                                    <p className="text-sm">The AI classified this message as a '{item.label}' and will not suggest a reply.</p>
+                                </div>
+                             </div>
                         ) : (
                             <>
                             <Textarea 
@@ -195,7 +212,7 @@ export default function InboxPage() {
                                 disabled={item.isRefining}
                              />
                             <div className="flex justify-end gap-2 mt-2">
-                                <Button variant="ghost" size="sm" onClick={() => handleRefine(item.id)} disabled={item.isRefining}>
+                                <Button variant="ghost" size="sm" onClick={() => handleRefine(item.id)} disabled={item.isRefining || !item.aiReply}>
                                     {item.isRefining ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wand2 className="h-4 w-4 mr-2" />}
                                     Refine
                                 </Button>
