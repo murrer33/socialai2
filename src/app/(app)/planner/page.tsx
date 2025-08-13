@@ -33,10 +33,20 @@ export default function PlannerPage() {
   const handleGeneratePlan = async () => {
     setIsLoading(true);
     setPlan(null); // Clear previous plan
-    try {
-      const result = await generateWeeklyContentPlan({
+
+    // In a real app, this data would come from a global state/context populated from the settings page.
+    const settings = {
         brandBrief: 'A cozy and friendly cafe in Istanbul, known for its artisanal coffee and homemade pastries. We want to be seen as a neighborhood gem.',
         catalogItems: ['Latte', 'Croissant', 'Cheesecake', 'Turkish Coffee'],
+        brandColor: '#3F51B5',
+        logoDataUri: PLACEHOLDER_LOGO_DATA_URI
+    };
+
+
+    try {
+      const result = await generateWeeklyContentPlan({
+        brandBrief: settings.brandBrief,
+        catalogItems: settings.catalogItems,
         holidaysEvents: 'No upcoming holidays.',
         preferredCadence: '7 posts per week',
         platforms: ['instagram', 'facebook', 'linkedin'],
@@ -50,13 +60,10 @@ export default function PlannerPage() {
       // Now, generate images for each post
       const imagePromises = postsWithStatus.map(async (post) => {
         try {
-           // In a real app, this would come from user settings. For now, using a placeholder.
-          const logoDataUri = PLACEHOLDER_LOGO_DATA_URI;
-
           const imageResult = await generateImageFromVisualBrief({
             visualBrief: post.visual_brief,
-            brandColor: '#3F51B5', // This would come from settings
-            logoDataUri: logoDataUri,
+            brandColor: settings.brandColor,
+            logoDataUri: settings.logoDataUri,
           });
           return { day: post.day, imageDataUri: imageResult.imageDataUri };
         } catch (imgError) {

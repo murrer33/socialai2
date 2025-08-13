@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useRef } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
@@ -11,22 +11,25 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { Bot, FileUp, Link as LinkIcon, UploadCloud, Loader2, Trash2 } from "lucide-react"
+import { Bot, FileUp, Link as LinkIcon, UploadCloud, Loader2, Trash2, PlusCircle } from "lucide-react"
 import Image from "next/image"
 import { useToast } from "@/hooks/use-toast"
 import { generateBrandBrief } from "@/ai/flows/generate-brand-brief"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
+import { Separator } from "@/components/ui/separator"
 
 const brandProfileSchema = z.object({
   companyName: z.string().min(1, "Company name is required."),
+  pitch: z.string().min(1, "Elevator pitch is required."),
+  audience: z.string().min(1, "Target audience is required."),
+  sellingPoints: z.array(z.object({ value: z.string().min(1, "Selling point cannot be empty.") })).min(1, "At least one selling point is required."),
   tone: z.object({
     friendly: z.number().min(0).max(100),
     playful: z.number().min(0).max(100),
     simple: z.number().min(0).max(100),
   }),
-  pitch: z.string().min(1, "Elevator pitch is required."),
   logo: z.any().optional(),
   primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color."),
   catalog: z.any().optional(),
@@ -108,15 +111,23 @@ export default function SettingsPage() {
     resolver: zodResolver(brandProfileSchema),
     defaultValues: {
       companyName: "",
+      pitch: "",
+      audience: "",
+      sellingPoints: [{ value: "" }],
       tone: {
           friendly: 50,
           playful: 50,
           simple: 50,
       },
-      pitch: "",
       primaryColor: "#3F51B5",
     },
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "sellingPoints",
+  });
+
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -141,13 +152,13 @@ export default function SettingsPage() {
 
   const handleGenerateBrief = async () => {
     const values = form.getValues();
-    const validation = await form.trigger(["companyName", "pitch", "tone"]);
+    const validation = await form.trigger(["companyName", "pitch", "tone", "audience"]);
 
     if (!validation) {
         toast({
             variant: "destructive",
             title: "Missing Information",
-            description: "Please fill out Company Name, Tone, and Elevator Pitch before generating a brief.",
+            description: "Please complete all fields in the Brand Identity section before generating a brief.",
         });
         return;
     }
@@ -158,7 +169,7 @@ export default function SettingsPage() {
     try {
       const result = await generateBrandBrief({
         companyProfile: `${values.companyName}: ${values.pitch}`,
-        audience: 'Turkish SMEs', // Placeholder until audience field is added
+        audience: values.audience,
         tone: values.tone,
       });
       setBrandBrief(result.brandBrief);
@@ -181,6 +192,8 @@ export default function SettingsPage() {
 
   const onSubmit = (data: BrandProfileFormValues) => {
     console.log(data)
+    // In a real app, this would also save this data to a global state/context
+    // so the planner page can access it.
     toast({
         title: "Settings Saved",
         description: "Your brand profile has been updated.",
@@ -206,33 +219,111 @@ export default function SettingsPage() {
         <TabsContent value="profile" className="mt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Brand Profile</CardTitle>
-                  <CardDescription>This information helps the AI create on-brand content.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <FormField
-                      control={form.control}
-                      name="companyName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your Company LLC" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="space-y-4">
-                         <Label>Tone of Voice</Label>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Brand Identity</CardTitle>
+                      <CardDescription>This core information defines your brand's voice and personality.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                       <FormField
+                        control={form.control}
+                        name="companyName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Company Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Your Company LLC" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="pitch"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Elevator Pitch</FormLabel>
+                            <FormControl>
+                              <Textarea placeholder="Describe your company in a few sentences." {...field} />
+                            </FormControl>
+                             <FormDescription>What makes your business unique? What's your mission?</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                       <FormField
+                        control={form.control}
+                        name="audience"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Target Audience</FormLabel>
+                            <FormControl>
+                              <Textarea placeholder="e.g., Young professionals in Istanbul who appreciate handcrafted goods and a cozy atmosphere." {...field} />
+                            </FormControl>
+                            <FormDescription>Describe your ideal customer.</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+
+                   <Card>
+                    <CardHeader>
+                        <CardTitle>Products & Services</CardTitle>
+                        <CardDescription>List your key offerings for the AI to use in content generation.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {fields.map((field, index) => (
+                           <FormField
+                            key={field.id}
+                            control={form.control}
+                            name={`sellingPoints.${index}.value`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="sr-only">Selling Point {index + 1}</FormLabel>
+                                    <div className="flex items-center gap-2">
+                                        <FormControl>
+                                            <Input {...field} placeholder={`Product or Service ${index + 1}`}/>
+                                        </FormControl>
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                        ))}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => append({ value: "" })}
+                            >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Selling Point
+                        </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="space-y-8">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Tone of Voice</CardTitle>
+                      <CardDescription>Adjust the sliders to match your brand's personality.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6 pt-4">
                          <FormField
                             control={form.control}
                             name="tone.friendly"
                             render={({ field }) => (
-                                <FormItem className="space-y-3">
+                                <FormItem>
+                                    <FormLabel>Friendly</FormLabel>
                                     <div className="flex justify-between text-xs text-muted-foreground"><span>Formal</span><span>Friendly</span></div>
                                     <FormControl>
                                         <Slider defaultValue={[field.value]} onValueChange={(v) => field.onChange(v[0])} max={100} step={1} />
@@ -244,7 +335,8 @@ export default function SettingsPage() {
                             control={form.control}
                             name="tone.playful"
                             render={({ field }) => (
-                                <FormItem className="space-y-3">
+                                <FormItem>
+                                    <FormLabel>Playful</FormLabel>
                                     <div className="flex justify-between text-xs text-muted-foreground"><span>Serious</span><span>Playful</span></div>
                                     <FormControl>
                                         <Slider defaultValue={[field.value]} onValueChange={(v) => field.onChange(v[0])} max={100} step={1} />
@@ -256,7 +348,8 @@ export default function SettingsPage() {
                             control={form.control}
                             name="tone.simple"
                             render={({ field }) => (
-                                <FormItem className="space-y-3">
+                                <FormItem>
+                                    <FormLabel>Simple</FormLabel>
                                     <div className="flex justify-between text-xs text-muted-foreground"><span>Detailed</span><span>Simple</span></div>
                                     <FormControl>
                                         <Slider defaultValue={[field.value]} onValueChange={(v) => field.onChange(v[0])} max={100} step={1} />
@@ -264,60 +357,49 @@ export default function SettingsPage() {
                                 </FormItem>
                             )}
                          />
-                    </div>
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="pitch"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Elevator Pitch</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Describe your company in a few sentences." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                    <div className="space-y-4">
-                      <Label>Brand Assets</Label>
-                      <div className="flex items-center gap-4">
-                        <div className="w-20 h-20 rounded-lg border border-dashed flex items-center justify-center bg-muted/50">
-                          {logoPreview ? (
-                            <Image src={logoPreview} alt="Logo preview" width={80} height={80} className="object-contain rounded-lg" />
-                          ) : (
-                            <UploadCloud className="w-8 h-8 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <p className="font-medium">Brand Logo</p>
-                          <p className="text-xs text-muted-foreground">PNG or SVG, up to 2MB.</p>
-                          <Button size="sm" variant="outline" type="button" onClick={() => logoInputRef.current?.click()}>
-                            {logoPreview ? 'Change' : 'Upload'}
-                          </Button>
-                          <FormField
-                            control={form.control}
-                            name="logo"
-                            render={() => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input
-                                    type="file"
-                                    className="hidden"
-                                    ref={logoInputRef}
-                                    onChange={handleLogoUpload}
-                                    accept="image/png, image/svg+xml"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                     <CardHeader>
+                        <CardTitle>Brand Assets</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-20 h-20 rounded-lg border border-dashed flex items-center justify-center bg-muted/50">
+                            {logoPreview ? (
+                                <Image src={logoPreview} alt="Logo preview" width={80} height={80} className="object-contain rounded-lg" />
+                            ) : (
+                                <UploadCloud className="w-8 h-8 text-muted-foreground" />
                             )}
-                          />
+                            </div>
+                            <div className="space-y-1">
+                            <p className="font-medium">Brand Logo</p>
+                            <p className="text-xs text-muted-foreground">PNG, max 2MB.</p>
+                            <Button size="sm" variant="outline" type="button" onClick={() => logoInputRef.current?.click()}>
+                                {logoPreview ? 'Change' : 'Upload'}
+                            </Button>
+                            <FormField
+                                control={form.control}
+                                name="logo"
+                                render={() => (
+                                <FormItem>
+                                    <FormControl>
+                                    <Input
+                                        type="file"
+                                        className="hidden"
+                                        ref={logoInputRef}
+                                        onChange={handleLogoUpload}
+                                        accept="image/png"
+                                    />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            </div>
                         </div>
-                      </div>
-                      <FormField
+                        <FormField
                         control={form.control}
                         name="primaryColor"
                         render={({ field }) => (
@@ -333,38 +415,39 @@ export default function SettingsPage() {
                           </FormItem>
                         )}
                         />
-                    </div>
+                         <div className="space-y-2">
+                            <Label>Product Catalog</Label>
+                            <div className="flex items-center gap-4 p-4 border border-dashed rounded-lg bg-muted/50">
+                            <FileUp className="w-8 h-8 text-muted-foreground" />
+                            <div className="space-y-1">
+                                <p className="font-medium">Upload Catalog (Optional)</p>
+                                <p className="text-xs text-muted-foreground">Upload a CSV with product info.</p>
+                            </div>
+                            <Button variant="outline" size="sm" className="ml-auto" type="button">Upload</Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                  </Card>
 
-                    <Card className="bg-muted/50">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Bot className="w-5 h-5" /> AI Brand Brief</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <Textarea rows={5} value={brandBrief} readOnly placeholder="Generate a brand brief from your details..." />
-                        <Button type="button" className="w-full" onClick={handleGenerateBrief} disabled={isGenerating}>
-                          {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                          {isGenerating ? "Generating..." : "Generate Brief"}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div className="space-y-4 pt-4 border-t">
-                    <Label>Product/Service Catalog</Label>
-                    <div className="flex items-center gap-4 p-4 border border-dashed rounded-lg">
-                      <FileUp className="w-8 h-8 text-muted-foreground" />
-                      <div className="space-y-1">
-                        <p className="font-medium">Upload Catalog</p>
-                        <p className="text-xs text-muted-foreground">Upload a CSV file with product name, price, and description.</p>
-                      </div>
-                      <Button variant="outline" className="ml-auto" type="button">Upload CSV</Button>
-                    </div>
-                  </div>
-                </CardContent>
-                 <CardFooter className="flex justify-end">
-                    <Button type="submit">Save Changes</Button>
-                  </CardFooter>
-              </Card>
+                  <Card className="bg-muted/50">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base"><Bot className="w-5 h-5" /> AI Brand Brief</CardTitle>
+                      <CardDescription className="text-xs">Generate a brief from your details to guide the AI.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <Textarea rows={6} value={brandBrief} readOnly placeholder="Click 'Generate Brief' after filling out your Brand Identity details." />
+                      <Button type="button" className="w-full" onClick={handleGenerateBrief} disabled={isGenerating}>
+                        {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        {isGenerating ? "Generating..." : "Generate Brief"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+              <Separator/>
+              <div className="flex justify-end">
+                <Button type="submit">Save All Changes</Button>
+              </div>
             </form>
           </Form>
         </TabsContent>

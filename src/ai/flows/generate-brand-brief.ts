@@ -53,7 +53,7 @@ const prompt = ai.definePrompt({
   Based on the following information, generate a concise brand brief (120-200 words) and identify tone tokens.
 
   Company Profile: {{{companyProfile}}}
-  Audience: {{{audience}}}
+  Target Audience: {{{audience}}}
   Tone Sliders (0-100 scale):
   - Friendly: {{{tone.friendly}}}
   - Playful: {{{tone.playful}}}
@@ -61,8 +61,8 @@ const prompt = ai.definePrompt({
 
   Synthesize these inputs to define the brand's voice. For example, high 'Friendly' and 'Simple' but low 'Playful' suggests a clear, approachable, but not jokey tone.
 
-  Brand Brief:
-  Tone Tokens:`,
+  Output the Brand Brief and then the Tone Tokens.
+`,
 });
 
 const generateBrandBriefFlow = ai.defineFlow(
