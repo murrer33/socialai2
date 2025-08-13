@@ -10,11 +10,15 @@ import type { GenerateWeeklyContentPlanOutput } from '@/ai/flows/generate-weekly
 import { generateWeeklyContentPlan } from '@/ai/flows/generate-weekly-content-plan';
 import { useToast } from '@/hooks/use-toast';
 import { EditPostDialog } from './edit-post-dialog';
+import { Clock } from 'lucide-react';
+
+export type Post = GenerateWeeklyContentPlanOutput['posts'][number] & { status: 'draft' | 'approved' | 'published' };
+type Plan = Omit<GenerateWeeklyContentPlanOutput, 'posts'> & { posts: Post[] };
 
 export default function PlannerPage() {
-  const [plan, setPlan] = useState<GenerateWeeklyContentPlanOutput | null>(null);
+  const [plan, setPlan] = useState<Plan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [editingPost, setEditingPost] = useState<GenerateWeeklyContentPlanOutput['posts'][number] | null>(null);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -30,7 +34,8 @@ export default function PlannerPage() {
         preferredCadence: '7 posts per week',
         platforms: ['instagram', 'facebook', 'linkedin'],
       });
-      setPlan(result);
+      const postsWithStatus: Post[] = result.posts.map(p => ({ ...p, status: 'draft' }));
+      setPlan({ ...result, posts: postsWithStatus });
     } catch (error) {
       console.error('Error generating plan:', error);
       toast({
@@ -43,18 +48,29 @@ export default function PlannerPage() {
     }
   };
 
-  const handleEditClick = (post: GenerateWeeklyContentPlanOutput['posts'][number]) => {
+  const handleEditClick = (post: Post) => {
     setEditingPost(post);
     setIsEditDialogOpen(true);
   };
 
-  const handleSavePost = (updatedPost: GenerateWeeklyContentPlanOutput['posts'][number]) => {
+  const handleSavePost = (updatedPost: Post) => {
     if (plan) {
       const updatedPosts = plan.posts.map(p => (p.day === updatedPost.day ? updatedPost : p));
       setPlan({ ...plan, posts: updatedPosts });
     }
     setIsEditDialogOpen(false);
     setEditingPost(null);
+  };
+  
+  const handleApprovePost = (postToApprove: Post) => {
+    if (plan) {
+      const updatedPosts = plan.posts.map(p =>
+        p.day === postToApprove.day
+          ? { ...p, status: p.status === 'approved' ? 'draft' : 'approved' }
+          : p
+      );
+      setPlan({ ...plan, posts: updatedPosts });
+    }
   };
 
   return (
@@ -78,7 +94,7 @@ export default function PlannerPage() {
       {plan ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {plan.posts.map((post, index) => (
-            <ContentCard key={index} post={post} onEdit={handleEditClick} />
+            <ContentCard key={index} post={post} onEdit={handleEditClick} onApprove={handleApprovePost} />
           ))}
         </div>
       ) : (

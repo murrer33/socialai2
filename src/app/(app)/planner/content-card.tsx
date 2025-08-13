@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Clock, Edit, MoreHorizontal, RefreshCw } from "lucide-react";
+import { CheckCircle, Edit, MoreHorizontal, RefreshCw, Undo2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,22 +12,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import type { GenerateWeeklyContentPlanOutput } from '@/ai/flows/generate-weekly-content-plan';
+import type { Post } from './page';
 
 type ContentCardProps = {
-  post: GenerateWeeklyContentPlanOutput['posts'][number];
-  onEdit: (post: GenerateWeeklyContentPlanOutput['posts'][number]) => void;
+  post: Post;
+  onEdit: (post: Post) => void;
+  onApprove: (post: Post) => void;
 };
 
-export function ContentCard({ post, onEdit }: ContentCardProps) {
+export function ContentCard({ post, onEdit, onApprove }: ContentCardProps) {
   const platformIcons = {
     instagram: '📸',
     facebook: '👍',
     linkedin: '💼',
   };
 
+  const isApproved = post.status === 'approved';
+
   return (
-    <Card className="flex flex-col overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
+    <Card className={`flex flex-col overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 ${isApproved ? 'border-primary/50' : ''}`}>
       <CardHeader className="p-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -87,9 +90,18 @@ export function ContentCard({ post, onEdit }: ContentCardProps) {
       <Separator />
 
       <CardFooter className="p-4 bg-muted/50">
-        <Button className="w-full" variant="outline">
-          <CheckCircle className="mr-2 h-4 w-4" />
-          Approve
+        <Button className="w-full" variant={isApproved ? "default" : "outline"} onClick={() => onApprove(post)}>
+          {isApproved ? (
+            <>
+              <Undo2 className="mr-2 h-4 w-4" />
+              Unapprove
+            </>
+          ) : (
+            <>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Approve
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>

@@ -12,14 +12,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { type GenerateWeeklyContentPlanOutput } from '@/ai/flows/generate-weekly-content-plan';
 import { useEffect, useState } from 'react';
+import { type Post } from './page';
 
 type EditPostDialogProps = {
-  post: GenerateWeeklyContentPlanOutput['posts'][number] | null;
+  post: Post | null;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (updatedPost: GenerateWeeklyContentPlanOutput['posts'][number]) => void;
+  onSave: (updatedPost: Post) => void;
 };
 
 export function EditPostDialog({ post, isOpen, onOpenChange, onSave }: EditPostDialogProps) {
