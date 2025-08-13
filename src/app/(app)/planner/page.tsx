@@ -8,7 +8,7 @@ import { Bot, Languages, Loader2 } from 'lucide-react';
 import { ContentCard } from './content-card';
 import type { GenerateWeeklyContentPlanOutput } from '@/ai/flows/generate-weekly-content-plan';
 import { generateWeeklyContentPlan } from '@/ai/flows/generate-weekly-content-plan';
-import { generateImageFromVisualBrief } from '@/ai/flows/generate-image-from-visual-brief';
+import { generateImageForPost } from '@/ai/flows/generate-image-for-post';
 import { useToast } from '@/hooks/use-toast';
 import { EditPostDialog } from './edit-post-dialog';
 
@@ -39,7 +39,7 @@ export default function PlannerPage() {
         selling_points: ['Latte', 'Croissant', 'Cheesecake', 'Turkish Coffee'],
         audience: 'Young professionals and students in Istanbul who appreciate high-quality coffee and a relaxing atmosphere.',
         tone: { friendly: 80, playful: 40, simple: 70 },
-        brandColor: '#3F51B5',
+        brandColor: "#3F51B5",
         logoDataUri: PLACEHOLDER_LOGO_DATA_URI
     };
 
@@ -69,9 +69,9 @@ export default function PlannerPage() {
       console.log('Simulating POST /api/v1/assets/generate for each post');
       const imagePromises = postsWithStatus.map(async (post) => {
         try {
-          const imageResult = await generateImageFromVisualBrief({
-            visualBrief: post.visual_brief,
-            brandColor: brandProfile.brandColor,
+          const imageResult = await generateImageForPost({
+            prompt: post.visual_brief,
+            brandColors: { primary: brandProfile.brandColor },
             logoDataUri: brandProfile.logoDataUri,
           });
            setPlan(currentPlan => {
