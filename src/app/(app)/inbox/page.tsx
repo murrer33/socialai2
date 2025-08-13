@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Bot, CornerDownLeft, Wand2, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -58,8 +58,10 @@ export default function InboxPage() {
             const knowledgeBaseFacts = "Store hours are 9am-6pm on weekdays, 10am-4pm on weekends. We are located at 123 Main St, Istanbul. We offer free shipping on all orders over 500 TL. The price for product X is 129,99 TL. Product Y is available in blue.";
             const policy = "Be polite and concise. If you don't know the answer, say you will get a human to help.";
 
-            for (const message of messages) {
-                if (message.isLoading) { // Only generate if not already generated
+            for (const message of initialMessages) {
+                // Find the message in state to check if we should process it
+                const messageInState = messages.find(m => m.id === message.id);
+                if (messageInState?.isLoading) { 
                     try {
                         const input: AutoReplyToMessageInput = {
                             // Simple intent detection based on keywords for this demo
@@ -95,6 +97,7 @@ export default function InboxPage() {
             }
         };
         generateReplies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Run only once on mount
 
 
@@ -130,7 +133,7 @@ export default function InboxPage() {
                         <div className="flex items-center gap-2">
                            <Bot className="h-5 w-5 text-primary" />
                            <h3 className="text-base font-semibold leading-none tracking-tight">AI Suggested Reply</h3>
-                           {item.confidence && (
+                           {item.confidence !== undefined && (
                             <Badge variant="outline" className="ml-auto">Confidence: {Math.round(item.confidence * 100)}%</Badge>
                            )}
                         </div>
