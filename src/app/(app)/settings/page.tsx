@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -34,6 +34,9 @@ export default function SettingsPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [brandBrief, setBrandBrief] = useState("");
   const [toneTokens, setToneTokens] = useState("");
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
 
   const form = useForm<BrandProfileFormValues>({
     resolver: zodResolver(brandProfileSchema),
@@ -44,6 +47,27 @@ export default function SettingsPage() {
       primaryColor: "#3F51B5",
     },
   });
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast({
+          variant: "destructive",
+          title: "File too large",
+          description: "Please upload a logo smaller than 2MB.",
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        setLogoPreview(dataUri);
+        form.setValue("logo", dataUri);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleGenerateBrief = async () => {
     const values = form.getValues();
@@ -174,12 +198,36 @@ export default function SettingsPage() {
                       <Label>Brand Assets</Label>
                       <div className="flex items-center gap-4">
                         <div className="w-20 h-20 rounded-lg border border-dashed flex items-center justify-center">
-                          <UploadCloud className="w-8 h-8 text-muted-foreground" />
+                          {logoPreview ? (
+                            <Image src={logoPreview} alt="Logo preview" width={80} height={80} className="object-contain rounded-lg" />
+                          ) : (
+                            <UploadCloud className="w-8 h-8 text-muted-foreground" />
+                          )}
                         </div>
                         <div className="space-y-1">
                           <p className="font-medium">Brand Logo</p>
                           <p className="text-xs text-muted-foreground">PNG or SVG, up to 2MB.</p>
-                          <Button size="sm" variant="outline" type="button">Upload</Button>
+                          <Button size="sm" variant="outline" type="button" onClick={() => logoInputRef.current?.click()}>
+                            {logoPreview ? 'Change' : 'Upload'}
+                          </Button>
+                          <FormField
+                            control={form.control}
+                            name="logo"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Input
+                                    type="file"
+                                    className="hidden"
+                                    ref={logoInputRef}
+                                    onChange={handleLogoUpload}
+                                    accept="image/png, image/svg+xml"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
                       </div>
                       <FormField
