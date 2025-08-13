@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useRef } from "react"
-import { useForm, Controller } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
@@ -12,11 +12,12 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { Bot, FileUp, Link as LinkIcon, UploadCloud, Loader2 } from "lucide-react"
+import { Bot, FileUp, Link as LinkIcon, UploadCloud, Loader2, Trash2 } from "lucide-react"
 import Image from "next/image"
 import { useToast } from "@/hooks/use-toast"
-import { generateBrandBrief, GenerateBrandBriefInput } from "@/ai/flows/generate-brand-brief"
+import { generateBrandBrief } from "@/ai/flows/generate-brand-brief"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Switch } from "@/components/ui/switch"
 
 const brandProfileSchema = z.object({
   companyName: z.string().min(1, "Company name is required."),
@@ -37,19 +38,48 @@ type Connection = {
   accountName?: string;
 };
 
+type KnowledgeFact = {
+    id: number;
+    text: string;
+}
+
 export default function SettingsPage() {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [brandBrief, setBrandBrief] = useState("");
-  const [toneTokens, setToneTokens] = useState("");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  
   const [connections, setConnections] = useState<Connection[]>([
     { id: 'instagram', name: 'Instagram Business', logoHint: 'instagram logo', connected: false },
     { id: 'facebook', name: 'Facebook Page', logoHint: 'facebook logo', connected: true, accountName: 'My Biz Page' },
     { id: 'linkedin', name: 'LinkedIn Company Page', logoHint: 'linkedin logo', connected: false },
   ]);
+  const [knowledgeFacts, setKnowledgeFacts] = useState<KnowledgeFact[]>([
+      { id: 1, text: "Store hours are 9am-6pm on weekdays, 10am-4pm on weekends." },
+      { id: 2, text: "We are located at 123 Main St, Istanbul." },
+      { id: 3, text: "We offer free shipping on all orders over 500 TL." },
+  ]);
+  const [newFact, setNewFact] = useState("");
+
+  const handleAddFact = () => {
+      if (newFact.trim()) {
+          setKnowledgeFacts([...knowledgeFacts, { id: Date.now(), text: newFact.trim() }]);
+          setNewFact("");
+          toast({
+              title: "Fact Added",
+              description: "The new fact has been added to your knowledge base.",
+          })
+      }
+  };
+  
+  const handleDeleteFact = (id: number) => {
+      setKnowledgeFacts(knowledgeFacts.filter(fact => fact.id !== id));
+      toast({
+          variant: 'destructive',
+          title: "Fact Removed",
+          description: "The fact has been removed from your knowledge base.",
+      })
+  };
 
   const handleConnectionToggle = (id: Connection['id']) => {
     setConnections(prev =>
@@ -102,9 +132,9 @@ export default function SettingsPage() {
 
   const handleGenerateBrief = async () => {
     const values = form.getValues();
-    const validation = form.trigger(["companyName", "pitch", "tone"]);
+    const validation = await form.trigger(["companyName", "pitch", "tone"]);
 
-    if (!await validation) {
+    if (!validation) {
         toast({
             variant: "destructive",
             title: "Missing Information",
@@ -115,7 +145,6 @@ export default function SettingsPage() {
 
     setIsGenerating(true);
     setBrandBrief("");
-    setToneTokens("");
 
     try {
       const result = await generateBrandBrief({
@@ -158,15 +187,16 @@ export default function SettingsPage() {
         </p>
       </div>
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="profile">Brand Profile</TabsTrigger>
           <TabsTrigger value="connections">Connections</TabsTrigger>
           <TabsTrigger value="knowledge">Knowledge Base</TabsTrigger>
+          <TabsTrigger value="auto-reply">Auto-Reply</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <Card>
                 <CardHeader>
                   <CardTitle>Brand Profile</CardTitle>
@@ -228,7 +258,7 @@ export default function SettingsPage() {
                     <div className="space-y-4">
                       <Label>Brand Assets</Label>
                       <div className="flex items-center gap-4">
-                        <div className="w-20 h-20 rounded-lg border border-dashed flex items-center justify-center">
+                        <div className="w-20 h-20 rounded-lg border border-dashed flex items-center justify-center bg-muted/50">
                           {logoPreview ? (
                             <Image src={logoPreview} alt="Logo preview" width={80} height={80} className="object-contain rounded-lg" />
                           ) : (
@@ -244,7 +274,7 @@ export default function SettingsPage() {
                           <FormField
                             control={form.control}
                             name="logo"
-                            render={({ field }) => (
+                            render={() => (
                               <FormItem>
                                 <FormControl>
                                   <Input
@@ -281,7 +311,7 @@ export default function SettingsPage() {
 
                     <Card className="bg-muted/50">
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base"><Bot className="w-5 h-5" /> AI Brand Brief</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Bot className="w-5 h-5" /> AI Brand Brief</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <Textarea rows={5} value={brandBrief} readOnly placeholder="Generate a brand brief from your details..." />
@@ -304,11 +334,10 @@ export default function SettingsPage() {
                       <Button variant="outline" className="ml-auto" type="button">Upload CSV</Button>
                     </div>
                   </div>
-
-                  <div className="flex justify-end">
-                    <Button type="submit">Save Changes</Button>
-                  </div>
                 </CardContent>
+                 <CardFooter className="flex justify-end">
+                    <Button type="submit">Save Changes</Button>
+                  </CardFooter>
               </Card>
             </form>
           </Form>
@@ -332,14 +361,10 @@ export default function SettingsPage() {
                       <p className="text-sm text-muted-foreground">Not Connected</p>
                     )}
                   </div>
-                  {conn.connected ? (
-                    <Button variant="destructive" onClick={() => handleConnectionToggle(conn.id)}>Disconnect</Button>
-                  ) : (
-                    <Button variant="outline" onClick={() => handleConnectionToggle(conn.id)}>
-                      <LinkIcon className="mr-2 h-4 w-4" />
-                      Connect
-                    </Button>
-                  )}
+                  <Button variant={conn.connected ? "destructive" : "outline"} onClick={() => handleConnectionToggle(conn.id)}>
+                    {conn.connected ? null : <LinkIcon className="mr-2 h-4 w-4" />}
+                    {conn.connected ? "Disconnect" : "Connect"}
+                  </Button>
                 </Card>
               ))}
             </CardContent>
@@ -353,20 +378,75 @@ export default function SettingsPage() {
               <CardDescription>Add facts for the AI to use in auto-replies (e.g., store hours, return policy).</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="space-y-2">
-                    <Label htmlFor="kb-fact">New Fact</Label>
-                    <Textarea id="kb-fact" placeholder="e.g., Our return policy is 30 days for a full refund." />
+                <div className="flex gap-2">
+                    <Textarea 
+                        id="kb-fact" 
+                        placeholder="e.g., Our return policy is 30 days for a full refund." 
+                        value={newFact}
+                        onChange={(e) => setNewFact(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAddFact())}
+                    />
+                    <Button onClick={handleAddFact}>Add Fact</Button>
                 </div>
-                <Button>Add Fact</Button>
                 <div className="space-y-2 pt-4 border-t">
                     <h4 className="font-medium">Existing Facts</h4>
                     <p className="text-sm text-muted-foreground">The AI will use these to answer customer questions.</p>
-                    <ul className="list-disc pl-5 space-y-1 text-sm">
-                        <li>Store hours are 9am-6pm on weekdays, 10am-4pm on weekends.</li>
-                        <li>We are located at 123 Main St, Istanbul.</li>
-                        <li>We offer free shipping on all orders over 500 TL.</li>
-                    </ul>
+                    {knowledgeFacts.length > 0 ? (
+                        <ul className="space-y-2">
+                           {knowledgeFacts.map(fact => (
+                               <li key={fact.id} className="flex items-center justify-between p-3 rounded-md bg-muted/50 text-sm">
+                                   <span>{fact.text}</span>
+                                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteFact(fact.id)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                   </Button>
+                               </li>
+                           ))}
+                        </ul>
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No facts added yet.</p>
+                    )}
                 </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+         <TabsContent value="auto-reply" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Auto-Reply Rules</CardTitle>
+              <CardDescription>Configure rules for when the AI should automatically reply to comments or messages.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <Card className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="font-medium">Reply to Price Inquiries</h4>
+                            <p className="text-sm text-muted-foreground">Automatically reply when someone asks about the price.</p>
+                        </div>
+                        <Switch defaultChecked />
+                    </div>
+                </Card>
+                 <Card className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="font-medium">Reply to Questions about Hours</h4>
+                            <p className="text-sm text-muted-foreground">Automatically reply when someone asks about store hours.</p>
+                        </div>
+                        <Switch defaultChecked />
+                    </div>
+                </Card>
+                 <Card className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="font-medium">Reply to Compliments</h4>
+                            <p className="text-sm text-muted-foreground">Automatically thank users for positive comments.</p>
+                        </div>
+                        <Switch />
+                    </div>
+                </Card>
+                 <div className="pt-4 border-t">
+                    <Button>Add New Rule</Button>
+                 </div>
             </CardContent>
           </Card>
         </TabsContent>
