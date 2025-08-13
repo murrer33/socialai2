@@ -22,6 +22,7 @@ import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import * as SocialService from "@/services/social"
 
 const brandProfileSchema = z.object({
   companyName: z.string().min(1, "Company name is required."),
@@ -46,6 +47,7 @@ type Connection = {
   logoHint: string;
   connected: boolean;
   accountName?: string;
+  isConnecting: boolean;
 };
 
 type KnowledgeFact = {
@@ -96,9 +98,9 @@ export default function SettingsPage() {
   const [currentPlan, setCurrentPlan] = useState<Plan>('free');
   const [role, setRole] = useState<Role>('Owner');
   const [connections, setConnections] = useState<Connection[]>([
-    { id: 'instagram', name: 'Instagram Business', logoHint: 'instagram logo', connected: false },
-    { id: 'facebook', name: 'Facebook Page', logoHint: 'facebook logo', connected: true, accountName: 'My Biz Page' },
-    { id: 'linkedin', name: 'LinkedIn Company Page', logoHint: 'linkedin logo', connected: false },
+    { id: 'instagram', name: 'Instagram Business', logoHint: 'instagram logo', connected: false, isConnecting: false },
+    { id: 'facebook', name: 'Facebook Page', logoHint: 'facebook logo', connected: true, accountName: 'My Biz Page', isConnecting: false },
+    { id: 'linkedin', name: 'LinkedIn Company Page', logoHint: 'linkedin logo', connected: false, isConnecting: false },
   ]);
   const [knowledgeFacts, setKnowledgeFacts] = useState<KnowledgeFact[]>([
       { id: 1, text: "Store hours are 9am-6pm on weekdays, 10am-4pm on weekends." },
@@ -146,28 +148,62 @@ export default function SettingsPage() {
       })
   };
 
-  const handleConnectionToggle = (id: Connection['id']) => {
-    const isConnecting = !connections.find(c => c.id === id)?.connected;
-    
-    // Simulate API call and success
-    setConnections(prev =>
-      prev.map(conn =>
-        conn.id === id
-          ? {
-              ...conn,
-              connected: !conn.connected,
-              // In a real app, this name would come from the OAuth callback
-              accountName: !conn.connected ? `Connected ${conn.name}` : undefined,
-            }
-          : conn
-      )
-    );
+  const handleConnectionToggle = async (id: Connection['id']) => {
+    const conn = connections.find(c => c.id === id);
+    if (!conn) return;
 
-    toast({
-        title: `Connection ${isConnecting ? 'Successful' : 'Removed'}`,
-        description: `Your ${id} account has been ${isConnecting ? 'connected' : 'disconnected'}.`,
-    })
+    setConnections(prev => prev.map(c => c.id === id ? { ...c, isConnecting: true } : c));
+
+    try {
+      if (conn.connected) {
+        // Disconnect logic
+        await SocialService.disconnect(id);
+        setConnections(prev =>
+          prev.map(c =>
+            c.id === id
+              ? {
+                  ...c,
+                  connected: false,
+                  accountName: undefined,
+                  isConnecting: false,
+                }
+              : c
+          )
+        );
+        toast({
+          title: 'Connection Removed',
+          description: `Your ${conn.name} account has been disconnected.`,
+        });
+      } else {
+        // Connect logic
+        const result = await SocialService.connect(id);
+        setConnections(prev =>
+          prev.map(c =>
+            c.id === id
+              ? {
+                  ...c,
+                  connected: true,
+                  accountName: result.accountName,
+                  isConnecting: false,
+                }
+              : c
+          )
+        );
+        toast({
+          title: 'Connection Successful',
+          description: `Your ${conn.name} account has been connected as "${result.accountName}".`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Connection Failed',
+        description: error.message || `Could not connect to ${conn.name}. Please try again.`,
+      });
+      setConnections(prev => prev.map(c => c.id === id ? { ...c, isConnecting: false } : c));
+    }
   };
+
 
   const form = useForm<BrandProfileFormValues>({
     resolver: zodResolver(brandProfileSchema),
@@ -568,9 +604,13 @@ export default function SettingsPage() {
                       <p className="text-sm text-muted-foreground">Not Connected</p>
                     )}
                   </div>
-                  <Button variant={conn.connected ? "destructive" : "outline"} onClick={() => handleConnectionToggle(conn.id)} disabled={role === 'Editor' && conn.id === 'instagram'}>
-                    {conn.connected ? null : <LinkIcon className="mr-2 h-4 w-4" />}
-                    {conn.connected ? "Disconnect" : "Connect"}
+                  <Button 
+                    variant={conn.connected ? "destructive" : "outline"} 
+                    onClick={() => handleConnectionToggle(conn.id)} 
+                    disabled={(role === 'Editor' && conn.id === 'instagram') || conn.isConnecting}
+                  >
+                    {conn.isConnecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : conn.connected ? null : <LinkIcon className="mr-2 h-4 w-4" />}
+                    {conn.isConnecting ? 'Connecting...' : conn.connected ? 'Disconnect' : 'Connect'}
                   </Button>
                 </Card>
               ))}
@@ -718,3 +758,5 @@ export default function SettingsPage() {
     </div>
   )
 }
+
+    
