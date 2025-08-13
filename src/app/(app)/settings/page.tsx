@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { Bot, FileUp, Link as LinkIcon, UploadCloud, Loader2, Trash2, PlusCircle } from "lucide-react"
+import { Bot, FileUp, Link as LinkIcon, UploadCloud, Loader2, Trash2, PlusCircle, Check } from "lucide-react"
 import Image from "next/image"
 import { useToast } from "@/hooks/use-toast"
 import { generateBrandBrief, GenerateBrandBriefInput } from "@/ai/flows/generate-brand-brief"
@@ -19,6 +19,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
 
 const brandProfileSchema = z.object({
   companyName: z.string().min(1, "Company name is required."),
@@ -50,6 +51,38 @@ type KnowledgeFact = {
     text: string;
 }
 
+type Plan = 'free' | 'basic' | 'pro';
+
+const plans = [
+    {
+        name: 'Free',
+        id: 'free',
+        price: '0 TL',
+        price_en: '$0',
+        features: ['1 connected account', '10 posts per month', 'Basic analytics'],
+        cta: 'Your Current Plan',
+        disabled: true,
+    },
+    {
+        name: 'Basic',
+        id: 'basic',
+        price: '249 TL',
+        price_en: '$10',
+        features: ['5 connected accounts', '100 posts per month', 'Advanced analytics', 'Auto-reply features'],
+        cta: 'Upgrade to Basic',
+        disabled: false,
+    },
+    {
+        name: 'Pro',
+        id: 'pro',
+        price: '749 TL',
+        price_en: '$30',
+        features: ['Unlimited accounts', 'Unlimited posts', 'Pro analytics suite', 'Priority support'],
+        cta: 'Upgrade to Pro',
+        disabled: false,
+    },
+];
+
 export default function SettingsPage() {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -57,6 +90,7 @@ export default function SettingsPage() {
   const [toneTokens, setToneTokens] = useState("");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [currentPlan, setCurrentPlan] = useState<Plan>('free');
   const [connections, setConnections] = useState<Connection[]>([
     { id: 'instagram', name: 'Instagram Business', logoHint: 'instagram logo', connected: false },
     { id: 'facebook', name: 'Facebook Page', logoHint: 'facebook logo', connected: true, accountName: 'My Biz Page' },
@@ -78,6 +112,16 @@ export default function SettingsPage() {
               description: "The new fact has been added to your knowledge base.",
           })
       }
+  };
+
+  const handlePlanChange = (planId: Plan) => {
+    // Simulate POST /billing/checkout-session and a successful webhook update
+    console.log(`Simulating checkout for plan: ${planId}`);
+    setCurrentPlan(planId);
+    toast({
+        title: "Plan Updated!",
+        description: `You are now on the ${planId} plan.`,
+    })
   };
   
   const handleDeleteFact = (id: number) => {
@@ -224,11 +268,12 @@ export default function SettingsPage() {
         </p>
       </div>
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="profile">Brand Profile</TabsTrigger>
           <TabsTrigger value="connections">Connections</TabsTrigger>
           <TabsTrigger value="knowledge">Knowledge Base</TabsTrigger>
           <TabsTrigger value="auto-reply">Auto-Reply</TabsTrigger>
+          <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6">
@@ -575,9 +620,54 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="billing" className="mt-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Billing & Plan</CardTitle>
+                    <CardDescription>Manage your subscription and payment details.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-6 md:grid-cols-3">
+                    {plans.map((plan) => (
+                        <Card key={plan.id} className={cn("flex flex-col", currentPlan === plan.id && "border-primary")}>
+                            <CardHeader>
+                                <CardTitle>{plan.name}</CardTitle>
+                                <CardDescription>
+                                    <span className="text-3xl font-bold">{plan.price}</span>
+                                    <span className="text-muted-foreground">/month</span>
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-grow space-y-4">
+                                <ul className="space-y-2">
+                                    {plan.features.map((feature, i) => (
+                                        <li key={i} className="flex items-center gap-2 text-sm">
+                                            <Check className="h-4 w-4 text-primary" />
+                                            <span>{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CardContent>
+                            <CardFooter>
+                                <Button 
+                                    className="w-full" 
+                                    disabled={currentPlan === plan.id}
+                                    onClick={() => handlePlanChange(plan.id as Plan)}
+                                >
+                                    {currentPlan === plan.id ? 'Current Plan' : plan.cta}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    ))}
+                </CardContent>
+                 <CardFooter className="flex justify-between items-center border-t pt-6">
+                    <div className="text-sm text-muted-foreground">
+                        <p>For questions or to cancel your plan, please contact support.</p>
+                    </div>
+                    <Button variant="outline">Contact Support</Button>
+                </CardFooter>
+            </Card>
+        </TabsContent>
+
       </Tabs>
     </div>
   )
 }
-
-    
