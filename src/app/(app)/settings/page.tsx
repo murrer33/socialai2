@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useState, useRef, useEffect } from "react"
@@ -552,10 +551,10 @@ export default function SettingsPage() {
                 </AlertDescription>
               </Alert>
            )}
-          <Card disabled={role === 'Editor'}>
+          <Card>
             <CardHeader>
               <CardTitle>Social Media Connections</CardTitle>
-              <CardDescription>Connect your accounts to enable auto-posting.</CardDescription>
+              <CardDescription>Connect your accounts to enable auto-posting and manual reconnect.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {connections.map((conn) => (
@@ -569,7 +568,7 @@ export default function SettingsPage() {
                       <p className="text-sm text-muted-foreground">Not Connected</p>
                     )}
                   </div>
-                  <Button variant={conn.connected ? "destructive" : "outline"} onClick={() => handleConnectionToggle(conn.id)}>
+                  <Button variant={conn.connected ? "destructive" : "outline"} onClick={() => handleConnectionToggle(conn.id)} disabled={role==='Editor'}>
                     {conn.connected ? null : <LinkIcon className="mr-2 h-4 w-4" />}
                     {conn.connected ? "Disconnect" : "Connect"}
                   </Button>
@@ -669,7 +668,7 @@ export default function SettingsPage() {
                 </AlertDescription>
               </Alert>
            )}
-            <Card disabled={role === 'Editor'}>
+            <Card>
                 <CardHeader>
                     <CardTitle>Billing & Plan</CardTitle>
                     <CardDescription>Manage your subscription and payment details.</CardDescription>
@@ -697,7 +696,7 @@ export default function SettingsPage() {
                             <CardFooter>
                                 <Button 
                                     className="w-full" 
-                                    disabled={currentPlan === plan.id}
+                                    disabled={currentPlan === plan.id || role === 'Editor'}
                                     onClick={() => handlePlanChange(plan.id as Plan)}
                                 >
                                     {currentPlan === plan.id ? 'Current Plan' : plan.cta}
@@ -719,3 +718,5 @@ export default function SettingsPage() {
     </div>
   )
 }
+
+    
