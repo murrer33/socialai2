@@ -1,0 +1,95 @@
+'use client';
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle, Clock, Edit, MoreHorizontal, RefreshCw } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
+import type { GenerateWeeklyContentPlanOutput } from '@/ai/flows/generate-weekly-content-plan';
+
+type ContentCardProps = {
+  post: GenerateWeeklyContentPlanOutput['posts'][number];
+};
+
+export function ContentCard({ post }: ContentCardProps) {
+  const platformIcons = {
+    instagram: '📸',
+    facebook: '👍',
+    linkedin: '💼',
+  };
+
+  return (
+    <Card className="flex flex-col overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
+      <CardHeader className="p-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-lg">{post.day}</span>
+            <div className="flex items-center gap-1">
+              {post.platforms.map(p => (
+                <span key={p} title={p} className="text-xs">{platformIcons[p]}</span>
+              ))}
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Regenerate
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Clock className="h-4 w-4" />
+          <span>{post.recommended_time_local}</span>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-4 pt-0 flex-grow">
+        <div className="space-y-4">
+          <div className="relative aspect-square w-full rounded-lg overflow-hidden border">
+            <Image
+              src="https://placehold.co/400x400.png"
+              alt={post.visual_brief}
+              data-ai-hint="social media post"
+              fill
+              className="object-cover"
+            />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm line-clamp-3">{post.caption_en}</p>
+            <div className="flex flex-wrap gap-1">
+              {post.hashtags.slice(0, 3).map((tag, i) => (
+                <Badge key={i} variant="secondary">{tag}</Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+
+      <Separator />
+
+      <CardFooter className="p-4 bg-muted/50">
+        <Button className="w-full" variant="outline">
+          <CheckCircle className="mr-2 h-4 w-4" />
+          Approve
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
